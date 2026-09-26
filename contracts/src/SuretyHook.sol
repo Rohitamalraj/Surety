@@ -15,6 +15,7 @@ import {BaseHook} from "v4-hooks/src/base/BaseHook.sol";
 
 import {ISuretyHook} from "./interfaces/ISuretyHook.sol";
 import {IPolicyRegistry} from "./interfaces/IPolicyRegistry.sol";
+import {IPremiumYieldVault} from "./interfaces/IPremiumYieldVault.sol";
 import {PolicyRecord, ViolationType} from "./interfaces/SuretyTypes.sol";
 
 /// @notice Owner: Person A. PRD §12, §15.5. A Uniswap v4 hook that is also the pool's liquid reserve:
@@ -42,6 +43,12 @@ contract SuretyHook is ISuretyHook, BaseHook, Ownable {
 
     /// @notice Demo/incident fallback: when false, `beforeSwap` never reverts (PRD §12.3, §15.5).
     bool public enforce = true;
+
+    /// @notice Optional (PRD §21.2 stretch #2): if set, every `depositBacking` call also attributes
+    /// that backer's principal to PremiumYieldVault so it can distribute its separate, premium-only
+    /// yield pool proportionally. Never receives or risks backer principal itself — see
+    /// PremiumYieldVault.sol's own header.
+    IPremiumYieldVault public premiumYieldVault;
 
     error UnauthorizedSender(address sender);
     error PoolNotUsdcPaired();
@@ -78,6 +85,11 @@ contract SuretyHook is ISuretyHook, BaseHook, Ownable {
         emit EnforceSet(on);
     }
 
+    function setPremiumYieldVault(address vault) external onlyOwner {
+        if (vault == address(0)) revert ZeroAddress();
+        premiumYieldVault = IPremiumYieldVault(vault);
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // ISuretyHook — reserve custody
     ////////////////////////////////////////////////////////////////////////
@@ -92,6 +104,9 @@ contract SuretyHook is ISuretyHook, BaseHook, Ownable {
     /// @inheritdoc ISuretyHook
     function depositBacking(uint256 amount) external {
         usdc.safeTransferFrom(msg.sender, address(this), amount);
+        if (address(premiumYieldVault) != address(0)) {
+            premiumYieldVault.creditBackerPrincipal(msg.sender, amount);
+        }
         emit BackingDeposited(msg.sender, amount);
     }
 

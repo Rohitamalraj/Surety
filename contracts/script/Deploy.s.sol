@@ -14,6 +14,7 @@ import {MockUSDC} from "../src/MockUSDC.sol";
 import {PolicyRegistry} from "../src/PolicyRegistry.sol";
 import {AgentVault} from "../src/AgentVault.sol";
 import {SuretyHook} from "../src/SuretyHook.sol";
+import {PremiumYieldVault} from "../src/PremiumYieldVault.sol";
 import {IPolicyRegistry} from "../src/interfaces/IPolicyRegistry.sol";
 import {IWorldIdGate} from "../src/interfaces/IWorldIdGate.sol";
 import {IEnsSubRegistry} from "../src/interfaces/ens/IEnsSubRegistry.sol";
@@ -58,6 +59,7 @@ contract Deploy is Script {
         PolicyRegistry registry;
         AgentVault vault;
         SuretyHook hook;
+        PremiumYieldVault yieldVault;
     }
 
     function run() external {
@@ -112,6 +114,14 @@ contract Deploy is Script {
         // 5. SuretyHook via HookMiner(poolManager, registry, usdc)
         d.hook = _deployHook(cfg, d);
 
+        // PRD §21.2 stretch #2 — premium yield split. Wholly optional: PolicyRegistry sends 100% of
+        // every premium to the reserve exactly as before unless this is deployed and wired.
+        d.yieldVault =
+            new PremiumYieldVault(IERC20(address(d.usdc)), IPoolManager(cfg.poolManager), address(d.registry), cfg.deployer);
+        d.registry.setPremiumYieldVault(address(d.yieldVault));
+        d.hook.setPremiumYieldVault(address(d.yieldVault));
+        d.yieldVault.setSuretyHook(address(d.hook));
+
         // 8. wire roles: registry<->hook, vault<->hook (router<->hook/registry deferred — see above)
         d.registry.setHook(d.hook);
         d.registry.setAgentVault(address(d.vault));
@@ -147,6 +157,13 @@ contract Deploy is Script {
         // Pin AgentVault.swap to exactly this pool — see AgentVault.sol's own header for why an
         // unpinned pool argument would let enforcement be skipped entirely.
         d.vault.setCanonicalPool(poolKey);
+
+        // One-sided range just above the 1:1 starting price, wide enough to absorb typical premium
+        // sizes as pure USDC (see PremiumYieldVault._addLiquidity) — re-tune via setPoolPosition if the
+        // pool's real price drifts meaningfully from 1:1 before this is redeployed.
+        bool usdcIsToken0 = Currency.unwrap(c0) == address(d.usdc);
+        (int24 lower, int24 upper) = usdcIsToken0 ? (int24(60), int24(6000)) : (int24(-6000), int24(-60));
+        d.yieldVault.setPoolPosition(poolKey, lower, upper);
     }
 
     // 10. write deployments/sepolia.json
@@ -156,6 +173,7 @@ contract Deploy is Script {
         vm.serializeAddress(json, "PolicyRegistry", address(d.registry));
         vm.serializeAddress(json, "AgentVault", address(d.vault));
         vm.serializeAddress(json, "SuretyHook", address(d.hook));
+        vm.serializeAddress(json, "PremiumYieldVault", address(d.yieldVault));
         vm.serializeAddress(json, "PoolManager", cfg.poolManager);
         string memory out = vm.serializeAddress(json, "WETH", cfg.weth);
         vm.writeJson(out, "../deployments/sepolia.json");

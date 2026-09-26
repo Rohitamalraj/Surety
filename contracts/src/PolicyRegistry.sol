@@ -9,6 +9,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IPolicyRegistry} from "./interfaces/IPolicyRegistry.sol";
 import {IWorldIdGate} from "./interfaces/IWorldIdGate.sol";
 import {ISuretyHook} from "./interfaces/ISuretyHook.sol";
+import {IPremiumYieldVault} from "./interfaces/IPremiumYieldVault.sol";
 import {PolicyRecord} from "./interfaces/SuretyTypes.sol";
 import {PricingEngine} from "./PricingEngine.sol";
 
@@ -49,6 +50,10 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
     address public claimRouter;
     address public agentVault;
 
+    /// @notice Optional (PRD §21.2 stretch #2): if unset, 100% of every premium goes to the reserve,
+    /// exactly as before this existed — nothing here changes behavior until it's deliberately wired.
+    IPremiumYieldVault public premiumYieldVault;
+
     uint256 internal _totalCoverage;
     mapping(bytes32 => PolicyRecord) internal _policies;
     mapping(bytes32 => mapping(address => bool)) internal _allowlist;
@@ -73,6 +78,10 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
     /// @notice Not part of the locked IPolicyRegistry API — lets the indexer/frontend discover each
     /// policy's per-policy resolver proxy without re-deriving it or querying ENS.
     event PolicyResolverDeployed(bytes32 indexed node, address resolver);
+
+    /// @notice Not part of the locked IPolicyRegistry API — how much of this policy's premium went to
+    /// the reserve vs. PremiumYieldVault. `yieldPortion` is always 0 while premiumYieldVault is unset.
+    event PremiumSplit(bytes32 indexed node, uint256 reservePortion, uint256 yieldPortion);
 
     constructor(
         IEnsSubRegistry _ensRegistry,
@@ -120,6 +129,11 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
         agentVault = _agentVault;
     }
 
+    function setPremiumYieldVault(address _premiumYieldVault) external onlyOwner {
+        if (_premiumYieldVault == address(0)) revert ZeroAddress();
+        premiumYieldVault = IPremiumYieldVault(_premiumYieldVault);
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // IPolicyRegistry
     ////////////////////////////////////////////////////////////////////////
@@ -143,8 +157,7 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
 
         (uint256 premium,,,,) = PricingEngine.quote(p.coverageLimit, p.tier, 0, 0, 0);
         usdc.safeTransferFrom(msg.sender, address(this), premium);
-        usdc.forceApprove(address(hook), premium);
-        hook.depositPremium(node, premium);
+        _splitAndDepositPremium(node, premium);
 
         _setUpEnsRecords(node, p, premium);
 
@@ -222,6 +235,24 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
     /// @inheritdoc IPolicyRegistry
     function totalCoverage() external view returns (uint256) {
         return _totalCoverage;
+    }
+
+    /// @dev Split applies to this premium ONLY — never to backer principal, which never passes through
+    /// this function at all (backers deposit straight into SuretyHook.depositBacking). If
+    /// premiumYieldVault is unset, yieldPortion is 0 and behavior is unchanged from before it existed.
+    /// Split out of issuePolicy to avoid stack-too-deep (same reason as _setUpEnsRecords below).
+    function _splitAndDepositPremium(bytes32 node, uint256 premium) internal {
+        uint256 yieldPortion =
+            address(premiumYieldVault) == address(0) ? 0 : premium * premiumYieldVault.yieldShareBps() / 10_000;
+        uint256 reservePortion = premium - yieldPortion;
+
+        usdc.forceApprove(address(hook), reservePortion);
+        hook.depositPremium(node, reservePortion);
+        if (yieldPortion > 0) {
+            usdc.forceApprove(address(premiumYieldVault), yieldPortion);
+            premiumYieldVault.depositPremiumShare(yieldPortion);
+        }
+        emit PremiumSplit(node, reservePortion, yieldPortion);
     }
 
     ////////////////////////////////////////////////////////////////////////
