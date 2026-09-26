@@ -79,7 +79,9 @@ app.get("/auth/worldid/start", async (c) => {
     state: session.state,
     nonce: session.nonce,
     codeChallenge: challenge,
-    fresh: purpose === "claim",
+    // Both moments need the human present: binding a policy to a person (enroll) and releasing a
+    // payout (claim). prompt=login + max_age=0 makes World require a new proof, not a reused session.
+    fresh: true,
   });
   return c.redirect(url, 302);
 });

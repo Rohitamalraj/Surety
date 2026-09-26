@@ -14,6 +14,9 @@ const contractsDir = fileURLToPath(new URL("../../contracts", import.meta.url));
 
 process.env.NETWORK = "local";
 process.env.LOCAL_RPC_URL = `http://127.0.0.1:${RPC_PORT}`;
+// The devnet's WorldIdGate trusts anvil account #1; don't pick up a real signer from backend/.env.
+process.env.BACKEND_SIGNER_PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+process.env.AGENT_PK = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a";
 process.env.IDKIT_APP_ID = "app_test";
 process.env.IDKIT_RP_ID = "rp_test";
 process.env.IDKIT_SIGNING_KEY = "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
