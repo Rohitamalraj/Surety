@@ -11,6 +11,12 @@ import {IWorldIdGate} from "../src/interfaces/IWorldIdGate.sol";
 import {ISuretyHook} from "../src/interfaces/ISuretyHook.sol";
 import {IViolationOracle} from "../src/interfaces/IViolationOracle.sol";
 import {PolicyRecord} from "../src/interfaces/SuretyTypes.sol";
+import {PremiumYieldVault} from "../src/PremiumYieldVault.sol";
+import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
+import {PoolKey} from "v4-core/src/types/PoolKey.sol";
+import {Currency} from "v4-core/src/types/Currency.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @dev Owner-only setters on Person A's PolicyRegistry and SuretyHook.
 interface IClaimRouterSetter {
@@ -33,6 +39,18 @@ interface ITestUsdc {
 interface IBackingHook {
     function depositBacking(uint256 amount) external;
     function liquidReserve() external view returns (uint256);
+}
+
+/// @dev Owner-only setter on PolicyRegistry and SuretyHook.
+interface IYieldVaultSetter {
+    function setPremiumYieldVault(address vault) external;
+}
+
+/// @dev The live vault's config, copied onto its replacement.
+interface IOldYieldVault {
+    function yieldShareBps() external view returns (uint256);
+    function tickLower() external view returns (int24);
+    function tickUpper() external view returns (int24);
 }
 
 interface IPolicyView {
@@ -87,6 +105,7 @@ contract DeployTrust is Script {
         else if (s == keccak256("human-gate")) stageHumanGate();
         else if (s == keccak256("back")) stageBack();
         else if (s == keccak256("demo")) stageDemo();
+        else if (s == keccak256("yield-vault")) stageYieldVault();
         else revert UnknownStage(stage);
     }
 
@@ -181,6 +200,46 @@ contract DeployTrust is Script {
         hook.depositBacking(amount);
         vm.stopBroadcast();
         console2.log("liquid reserve now:", hook.liquidReserve());
+    }
+
+    // ---------------------------------------------------------------- yield vault swap
+
+    /// @notice Replaces the live PremiumYieldVault with a fresh build of the current source (Person A's
+    /// fail-soft _addLiquidity fix): copies the old vault's yield share and tick range, re-points
+    /// registry + hook at it, and backs it with BACKING test-USDC (default 1,000) so it has backer
+    /// principal to attribute premium shares to. The old vault is left untouched. STAGE=yield-vault.
+    function stageYieldVault() public {
+        uint256 pk = vm.envUint("DEPLOYER_PK");
+        address me = vm.addr(pk);
+        string memory json = vm.readFile(_file());
+        address registry = vm.parseJsonAddress(json, ".PolicyRegistry");
+        address hook = vm.parseJsonAddress(json, ".SuretyHook");
+        address usdc = vm.parseJsonAddress(json, ".MockUSDC");
+        IOldYieldVault old = IOldYieldVault(vm.parseJsonAddress(json, ".PremiumYieldVault"));
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(vm.parseJsonAddress(json, ".pool.currency0")),
+            currency1: Currency.wrap(vm.parseJsonAddress(json, ".pool.currency1")),
+            fee: uint24(vm.parseJsonUint(json, ".pool.fee")),
+            tickSpacing: int24(int256(vm.parseJsonUint(json, ".pool.tickSpacing"))),
+            hooks: IHooks(hook)
+        });
+        uint256 amount = vm.envOr("BACKING", uint256(1_000)) * 1e6;
+
+        vm.startBroadcast(pk);
+        PremiumYieldVault v =
+            new PremiumYieldVault(IERC20(usdc), IPoolManager(vm.parseJsonAddress(json, ".PoolManager")), registry, me);
+        v.setYieldShareBps(old.yieldShareBps());
+        v.setPoolPosition(key, old.tickLower(), old.tickUpper());
+        v.setSuretyHook(hook);
+        IYieldVaultSetter(registry).setPremiumYieldVault(address(v));
+        IYieldVaultSetter(hook).setPremiumYieldVault(address(v));
+        if (ITestUsdc(usdc).balanceOf(me) < amount) ITestUsdc(usdc).mint(me, amount);
+        ITestUsdc(usdc).approve(hook, amount);
+        IBackingHook(hook).depositBacking(amount);
+        vm.stopBroadcast();
+
+        vm.writeJson(vm.toString(address(v)), _file(), ".PremiumYieldVault");
+        console2.log("PremiumYieldVault:", address(v));
     }
 
     // ---------------------------------------------------------------- demo actors
