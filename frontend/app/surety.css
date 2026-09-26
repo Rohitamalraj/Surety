@@ -60,7 +60,7 @@
   width: 34px; height: 34px; display: grid; place-items: center;
   border: 1px solid var(--line-strong); border-radius: var(--radius);
   font-family: var(--font-pixel), var(--font-mono), monospace; font-size: 14px; color: var(--faint);
-  background: radial-gradient(oklch(0 0 0 / 0.16) 0.5px, transparent 0.6px) 0 0 / 3px 3px, var(--bg);
+  background: var(--tint);
 }
 .step-done .step-n { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .step-active .step-n { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 3px color-mix(in oklch, var(--signal) 45%, transparent); }

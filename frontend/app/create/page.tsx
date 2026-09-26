@@ -12,7 +12,7 @@ import { short, toUnits } from "@/lib/format";
 import { useDeployments } from "@/lib/hooks";
 import { maxTier, quote, TIER_NAMES } from "@/lib/pricing";
 import { nodeFor } from "@/lib/ens";
-import { DitherArt } from "@/components/DitherArt";
+import { LineArt } from "@/components/LineArt";
 import { HumanCheck } from "@/components/HumanCheck";
 import { PricingBreakdown } from "@/components/PricingBreakdown";
 import { PoweredBy } from "@/components/PoweredBy";
@@ -203,7 +203,7 @@ function CreateInner() {
           className="absolute inset-y-0 right-0 hidden md:block"
           style={{ width: "46%", background: "var(--tint)", borderLeft: "1px solid var(--line)" }}
         >
-          <DitherArt shape="signal" accent gap={5} className="h-full w-full" />
+          <LineArt shape="signal" className="h-full w-full" />
         </div>
         <div className="relative z-10 mx-auto max-w-6xl px-6" style={{ padding: "clamp(56px, 9vw, 110px) 24px clamp(40px, 6vw, 70px)" }}>
           <div className="label rise">{"create policy"}</div>

@@ -6,7 +6,7 @@ import { useConnection, usePublicClient, useWriteContract } from "wagmi";
 import { erc20Abi, hookAbi } from "@/lib/abi";
 import { useDeployments, useFeed } from "@/lib/hooks";
 import { toUnits } from "@/lib/format";
-import { DitherArt } from "@/components/DitherArt";
+import { LineArt } from "@/components/LineArt";
 import { EventRow } from "@/components/EventRow";
 import { SolvencyBar } from "@/components/SolvencyBar";
 import { PageHead } from "@/components/ui";
@@ -64,7 +64,7 @@ export default function FeedPage() {
               <SolvencyBar />
             </div>
             <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-              <DitherArt shape="field" accent gap={4} className="h-full w-full" />
+              <LineArt shape="field" className="h-full w-full" />
               <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
                 payouts come only from the liquid reserve
               </div>

@@ -8,7 +8,7 @@ import { api } from "@/lib/api";
 import { useFeed } from "@/lib/hooks";
 import { ENS_PARENT } from "@/lib/config";
 import { ago, short, usdc } from "@/lib/format";
-import { DitherArt } from "@/components/DitherArt";
+import { LineArt } from "@/components/LineArt";
 import { PageHead } from "@/components/ui";
 
 /** Counterparty lookup (PRD US-12): anyone can check an agent's coverage by its ENS name. */
@@ -49,7 +49,7 @@ export default function PolicyLookupPage() {
       </form>
 
       <div style={{ position: "relative", height: 110, marginTop: 28, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-        <DitherArt shape="loop" accent gap={4} className="h-full w-full" />
+        <LineArt shape="loop" className="h-full w-full" />
         <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
           the rules are public · resolver looked up fresh on every read
         </div>

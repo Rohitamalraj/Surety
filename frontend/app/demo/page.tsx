@@ -7,7 +7,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { useFeed, usePolicy } from "@/lib/hooks";
 import { short, txUrl, usdc } from "@/lib/format";
-import { DitherArt } from "@/components/DitherArt";
+import { LineArt } from "@/components/LineArt";
 import { ClaimFlow } from "@/components/ClaimFlow";
 import { SolvencyBar } from "@/components/SolvencyBar";
 import { EventRow } from "@/components/EventRow";
@@ -216,7 +216,7 @@ function DemoInner() {
           </div>
 
           <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 16 }}>
-            <DitherArt shape="signal" accent gap={4} className="h-full w-full" />
+            <LineArt shape="signal" className="h-full w-full" />
             <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
               enforce where you can · insure what gets through
             </div>

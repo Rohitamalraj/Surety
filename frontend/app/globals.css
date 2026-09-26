@@ -92,8 +92,7 @@ div.label:first-child::before, .eyebrow::before {
 
 /* ---- dither texture utilities ---- */
 .dither {
-  background-image: radial-gradient(oklch(0.6 0.2 258 / 0.5) 0.5px, transparent 0.6px);
-  background-size: 4px 4px;
+  background: var(--tint);
 }
 /* sponsor logos rendered as halftone-dithered silhouettes (logo used as a mask
    over a dot field); resolve to solid ink on hover */
@@ -168,8 +167,7 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background:
-    radial-gradient(oklch(0 0 0 / 0.24) 0.5px, transparent 0.6px) 0 0 / 3px 3px,
-    var(--bg);
+    var(--tint);
   color: var(--ink); font-size: 15px; letter-spacing: 0.04em;
   cursor: pointer;
   transition: border-color 0.2s var(--ease-out-quart);
@@ -254,8 +252,7 @@ a { color: inherit; text-decoration: none; }
   display: grid; place-items: center;
   border: 1px solid var(--line-strong);
   background:
-    radial-gradient(oklch(0 0 0 / 0.16) 0.5px, transparent 0.6px) 0 0 / 3px 3px,
-    var(--bg-2);
+    var(--tint);
   color: var(--ink); font-size: 15px;
   transition: border-color 0.2s var(--ease-out-quart);
 }

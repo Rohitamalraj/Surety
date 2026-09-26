@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Globe, { type GlobeMarker } from "@/components/lightswind/globe";
-import { DitherArt } from "@/components/DitherArt";
+import { LineArt } from "@/components/LineArt";
 import { PoweredBy } from "@/components/PoweredBy";
 import { Wordmark } from "@/components/Wordmark";
 import { Footer } from "@/components/Footer";
@@ -277,7 +277,7 @@ export default function HomePage() {
             <div key={e.n} className="scan" style={{ background: "var(--bg)", padding: "28px 26px 34px" }}>
               {cellHead(e.n, e.k)}
               <div style={{ marginTop: 20, height: 150, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-                <DitherArt shape={e.shape} accent gap={4} className="h-full w-full" />
+                <LineArt shape={e.shape} className="h-full w-full" />
               </div>
               <h3 style={{ fontSize: 22, marginTop: 22 }}>{e.t}</h3>
               <p style={{ marginTop: 12, color: "var(--muted)", fontSize: 13.5, lineHeight: 1.7 }}>{e.d}</p>
@@ -308,7 +308,7 @@ export default function HomePage() {
                 position: "relative",
               }}
             >
-              <DitherArt shape="hand" accent gap={4} className="h-full w-full" />
+              <LineArt shape="hand" className="h-full w-full" />
               <div
                 className="label"
                 style={{
@@ -385,7 +385,7 @@ export default function HomePage() {
                 </div>
               </div>
               <div style={{ flex: "1 1 300px", minHeight: 220, background: "var(--tint)", overflow: "hidden" }}>
-                <DitherArt shape="arrows" accent gap={4} className="h-full w-full" />
+                <LineArt shape="arrows" className="h-full w-full" />
               </div>
             </div>
           </div>
