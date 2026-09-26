@@ -81,6 +81,18 @@ export interface PolicyView {
   events: FeedEvent[];
 }
 
+/** One row of GET /api/policies — live on-chain state plus the ENS label from the purchase tx. */
+export interface PolicySummary {
+  node: Hex;
+  label: string | null;
+  premium: string;
+  issuedTx: Hex;
+  issuedAt: number;
+  policy: PolicyRecord;
+  claims: { claimId: string; paymentId: string; amount: string; status: ClaimStatus; filedAt: number }[];
+  payments: number;
+}
+
 export interface Solvency {
   liquidReserve: string;
   totalCoverage: string;
@@ -135,6 +147,7 @@ export const api = {
   feed: (node?: string, limit = 60) => req<FeedEvent[]>(`/api/feed?limit=${limit}${node ? `&node=${node}` : ""}`),
   solvency: () => req<Solvency>("/api/solvency"),
   policy: (node: string) => req<PolicyView>(`/api/policy/${node}`),
+  policies: (holder?: string) => req<PolicySummary[]>(`/api/policies${holder ? `?holder=${holder}` : ""}`),
   claim: (id: string) => req<{ status: ClaimStatus; vtype: Violation; amount: string; node: Hex; paymentId: string }>(`/api/claims/${id}`),
   demo: () => req<DemoInfo | null>("/api/demo"),
   agentStep: (step: "normal" | "swap" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),
