@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useConnection, usePublicClient, useWriteContract } from "wagmi";
 import { erc20Abi, routerAbi, vaultAbi } from "@/lib/abi";
 import { fullName, nodeFor, readPolicyRecords, RECORD_KEYS } from "@/lib/ens";
+import { EnsVerify } from "@/components/EnsVerify";
 import { useDeployments, useFeed, usePolicy } from "@/lib/hooks";
 import { short, toUnits, usdc } from "@/lib/format";
 import { TIER_NAMES } from "@/lib/pricing";
@@ -150,6 +151,11 @@ function PolicyInner({ agentName }: { agentName: string }) {
           <div className="sticky-side" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {node && <FundAgent node={node} />}
             <EnsCard name={label} />
+            {label && (
+              <div className="side-card">
+                <EnsVerify label={label} lookup={false} />
+              </div>
+            )}
             <div className="side-card" style={{ paddingBottom: 6 }}>
               <div className="label" style={{ marginBottom: 4 }}>
                 {"audit trail · public events"}

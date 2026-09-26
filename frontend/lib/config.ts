@@ -17,3 +17,7 @@ export const EXPLORER = NETWORK === "sepolia" ? "https://sepolia.etherscan.io" :
 export const ENS_PARENT = process.env.NEXT_PUBLIC_ENS_PARENT ?? "surety.eth";
 
 export const USDC_DECIMALS = 6;
+
+/** ENS's official ENSv2 beta tools (Sepolia): anyone can verify a policy's name and records there. */
+export const ENS_EXPLORER = NETWORK === "sepolia" ? "https://explorer.ens.dev" : null;
+export const ENS_APP = NETWORK === "sepolia" ? "https://app.ens.dev" : null;

@@ -96,6 +96,7 @@ export interface PolicySummary {
 /** The hosted payments agent (backend/src/agent/payments.ts). */
 export interface AgentRules {
   ensName: string | null;
+  resolver: Address | null;
   policyholder: Address;
   agent: Address;
   perTxCap: string;

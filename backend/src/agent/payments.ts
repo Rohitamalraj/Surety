@@ -83,15 +83,20 @@ export async function readRules(node: Hex) {
   ]);
   let allowlist: string[] = [];
   let ensName: string | null = null;
+  let resolver: Address | null = null;
   if (label) {
     ensName = `${label}.surety.eth`;
-    try {
-      const raw = await publicClient.getEnsText({ name: normalize(ensName), key: "surety.allowlist" });
-      allowlist = (raw ?? "").split(/[\s,]+/).filter((a) => isAddress(a));
-    } catch {}
+    const name = normalize(ensName);
+    const [raw, r] = await Promise.all([
+      publicClient.getEnsText({ name, key: "surety.allowlist" }).catch(() => null),
+      publicClient.getEnsResolver({ name }).catch(() => null),
+    ]);
+    allowlist = (raw ?? "").split(/[\s,]+/).filter((a) => isAddress(a));
+    resolver = r;
   }
   return {
     ensName,
+    resolver,
     policyholder: policy.policyholder,
     agent: policy.agent,
     perTxCap: formatUnits(policy.perTxCap, USDC),

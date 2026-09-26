@@ -9,6 +9,7 @@ import { ENS_PARENT } from "@/lib/config";
 import { short, usdc } from "@/lib/format";
 import { PageHead, Pill, TxLink } from "@/components/ui";
 import { PoweredBy } from "@/components/PoweredBy";
+import { EnsVerify } from "@/components/EnsVerify";
 
 interface Turn {
   role: "user" | "assistant";
@@ -312,6 +313,11 @@ function Console({ policy, address }: { policy: PolicySummary; address: string }
             Payments aren&apos;t blocked: AgentVault records every one, and the ViolationOracle flags any that break these
             rules. Those are the ones you can claim.
           </p>
+          {policy.label && (
+            <div style={{ borderTop: "1px solid var(--line)", paddingTop: 12 }}>
+              <EnsVerify label={policy.label} resolver={rules.data?.resolver} />
+            </div>
+          )}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Link href={`/policy/${policy.label ?? node}`} className="btn">
               Policy · fund · claim →
