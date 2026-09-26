@@ -37,7 +37,7 @@ const MECHANISM = [
 const HERO = {
   heading: "INSURE THE ON-CHAIN AGENTS",
   body:
-    "Parametric insurance for AI agents that spend money. When an insured agent breaks its own published rules, the payout is a contract call. No adjuster, no lawsuit, same day.",
+    "Insurance for the AI agents you trust with money. If an agent is tricked into breaking its rules, you're paid back on-chain the same day, with no adjuster and no lawsuit.",
 };
 
 const SPONSOR_LOGOS: { key: string; title: string; src: string; color?: string }[] = [
