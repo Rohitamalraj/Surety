@@ -7,21 +7,60 @@ function optional(name: string, fallback = ""): string {
   return process.env[name]?.trim() || fallback;
 }
 
-/** Contract addresses written by contracts/script/Deploy.s.sol, keyed by contract name. */
-export type Deployments = Partial<
-  Record<
-    "MockUSDC" | "PolicyRegistry" | "AgentVault" | "SuretyHook" | "ViolationOracle" | "WorldIdGate" | "ClaimRouter",
-    Address
-  >
-> & { deployBlock?: number };
+export type ContractName =
+  | "MockUSDC"
+  | "PolicyRegistry"
+  | "AgentVault"
+  | "SuretyHook"
+  | "ViolationOracle"
+  | "WorldIdGate"
+  | "ClaimRouter";
+
+/** Demo actors written by the seed script (SeedDemo.s.sol on Sepolia, LocalDevnet.s.sol locally). */
+export interface DemoInfo {
+  label: string;
+  node: Hex;
+  agent: Address;
+  policyholder: Address;
+  merchant: Address; // on the allowlist
+  attacker: Address; // off the allowlist
+  payout: Address;
+}
+
+/** v4 pool the agent swaps through (Sepolia). `hooks` is SuretyHook. */
+export interface PoolInfo {
+  currency0: Address;
+  currency1: Address;
+  fee: number;
+  tickSpacing: number;
+}
+
+/** deployments/<network>.json, keyed by contract name. */
+export type Deployments = Partial<Record<ContractName, Address>> & {
+  deployBlock?: number;
+  demo?: DemoInfo;
+  pool?: PoolInfo;
+};
+
+/** `local` = anvil devnet (contracts/test/devnet/LocalDevnet.s.sol), `sepolia` = the real deployment. */
+const network = optional("NETWORK", "sepolia") as "local" | "sepolia";
+const isLocal = network === "local";
+
+// anvil's well-known dev keys (#1 backend signer, #2 agent, #3 policyholder). Local devnet only — never real funds.
+const ANVIL_SIGNER_PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const ANVIL_AGENT_PK = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a";
+const ANVIL_POLICYHOLDER_PK = "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6";
 
 function loadDeployments(): Deployments {
-  const path = fileURLToPath(new URL("../../deployments/sepolia.json", import.meta.url));
+  const path = fileURLToPath(new URL(`../../deployments/${network}.json`, import.meta.url));
   if (!existsSync(path)) return {};
   return JSON.parse(readFileSync(path, "utf8")) as Deployments;
 }
 
+const deployments = loadDeployments();
+
 export const config = {
+  network,
   port: Number(optional("PORT", "8787")),
   publicUrl: optional("PUBLIC_URL", "http://localhost:8787").replace(/\/$/, ""),
   frontendUrl: optional("FRONTEND_URL", "http://localhost:3000").replace(/\/$/, ""),
@@ -35,14 +74,17 @@ export const config = {
   },
 
   chain: {
-    rpcUrl: optional("SEPOLIA_RPC_URL"),
-    chainId: Number(optional("CHAIN_ID", "11155111")),
-    signerPk: optional("BACKEND_SIGNER_PK") as Hex | "",
-    agentPk: optional("AGENT_PK") as Hex | "",
-    deployBlock: BigInt(optional("DEPLOY_BLOCK", "0")),
+    rpcUrl: isLocal ? optional("LOCAL_RPC_URL", "http://127.0.0.1:8545") : optional("SEPOLIA_RPC_URL"),
+    chainId: isLocal ? 31337 : 11155111,
+    signerPk: optional("BACKEND_SIGNER_PK", isLocal ? ANVIL_SIGNER_PK : "") as Hex | "",
+    agentPk: optional("AGENT_PK", isLocal ? ANVIL_AGENT_PK : "") as Hex | "",
+    /** Demo console only: files claims as the demo policyholder without a browser wallet. */
+    policyholderPk: optional("POLICYHOLDER_PK", isLocal ? ANVIL_POLICYHOLDER_PK : "") as Hex | "",
+    deployBlock: BigInt(optional("DEPLOY_BLOCK", String(deployments.deployBlock ?? 0))),
+    pollMs: isLocal ? 1_000 : 4_000,
   },
 
-  deployments: loadDeployments(),
+  deployments,
 
   /** How long a signed approval stays valid on-chain. */
   attestationTtlSec: 10 * 60,
@@ -50,6 +92,6 @@ export const config = {
   sessionTtlSec: 10 * 60,
   /** Tolerated clock skew between World ID's auth_time and our clock. */
   clockSkewSec: 60,
-} as const;
+};
 
 export const redirectUri = () => `${config.publicUrl}/auth/worldid/callback`;
