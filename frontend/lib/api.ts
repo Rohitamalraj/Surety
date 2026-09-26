@@ -109,6 +109,8 @@ export interface StepResult {
   txHash?: Hex;
   reverted: boolean;
   revertReason?: string;
+  /** attack-swap only: SuretyHook itself rejected the swap. */
+  blockedByHook?: boolean;
   paymentId?: string;
   amount?: string;
   to?: Address;
