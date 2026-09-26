@@ -19,6 +19,14 @@
 
 Source repo for all of the above: `github.com/ensdomains/contracts-v2`, commit `71a3b7339dbc55ab47667abdfe8303bac4f4c24e` (the exact commit ENS has deployed to Sepolia as of this writing). We vendor **minimal local interfaces** for the functions we actually call (see `contracts/src/interfaces/ens/`) rather than pulling in the whole `contracts-v2` dependency tree (`@ens/contracts`, `@ensdomains/verifiable-factory`, OZ-upgradeable, pinned `solc 0.8.25`) — that tree is built for implementing ENSv2 itself, not for a consumer calling the deployed contracts, and pulling it in whole risks solc/remapping conflicts with our own 0.8.26 + non-upgradeable OZ v5.1.0 setup.
 
+### Read API correction and current implementation review
+
+PermissionedResolver reads use ENSIP-10 `resolve(dnsName, encodedProfileQuery)`; it has no standalone
+`text(bytes32,string)` entry point. Use the text interface only to encode the nested query, then decode
+the returned bytes as a string. The fork tests now verify this against deployed bytecode. See
+[INTEGRATION_REVIEW.md](INTEGRATION_REVIEW.md) for the component walkthrough, test results, World ID
+configuration distinction, and open production blockers that qualify earlier claims in this document.
+
 ### How subname issuance actually works (confirmed from source, not just the architecture blog post)
 `docs.ens.domains/ensv2/overview` and the "Deeper Dive" blog post describe Permissioned Registry / Permissioned Resolver / Enhanced Access Control only at the concept level — no function signatures. The real mechanics, read directly from `PermissionedRegistry.sol`, `PermissionedResolver.sol`, `PermissionedResolverLib.sol`, `EnhancedAccessControl.sol`, `IEnhancedAccessControl.sol`, `RegistryRolesLib.sol`:
 

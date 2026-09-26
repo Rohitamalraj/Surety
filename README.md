@@ -13,6 +13,11 @@ AI agents now spend money autonomously. On May 4, 2026 an attacker manipulated G
 Each insured agent gets a **non-transferable ENSv2 name** whose records *are* its policy (per-tx cap, counterparty allowlist, coverage, tier). The agent spends through an `AgentVault`; swaps go through a **Uniswap v4 hook** that blocks rule-breaking trades. If a transfer slips through and breaks the published rules, anyone can recompute the violation on-chain; the policyholder files a claim, passes a **fresh World ID for Agents check** proving they're the same human who bought the policy, and the hook pays out from its reserve — in minutes.
 
 ## Architecture
+
+Multi-user simulations, adversarial findings and reproduction commands: [deep verification](docs/DEEP_VERIFICATION.md).
+
+Current code findings, the ENSIP-10 read correction, and open production blockers are in
+[`docs/INTEGRATION_REVIEW.md`](docs/INTEGRATION_REVIEW.md). Passing chain tests does not yet establish a complete identity-to-payout flow.
 See [`docs/PRD.md`](docs/PRD.md) (full spec) and [`docs/TEAM_PLAN.md`](docs/TEAM_PLAN.md).
 
 | Folder | What |
