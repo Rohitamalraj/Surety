@@ -71,3 +71,79 @@ backend work in progress — nothing from that branch touched here).
 ### Commits this session
 See `git log a/chain` — one commit per numbered item above (dependency wiring, then MockUSDC, then this
 log), not one giant commit, per the project's incremental-commit convention.
+
+---
+
+## Session 2 — 2026-09-26: the four core contracts, end-to-end, all real APIs verified before use
+
+Continuation of Session 1 in the same day. Every remaining item on that session's TODO list is now
+done except the two that need a funded wallet / live RPC (neither available in this environment).
+
+### What was done
+1. **`SuretyHook.sol`** (A5) — `beforeSwap` enforcement (empty `hookData` → public pool stays open;
+   present `hookData` decodes `(node, counterparty)`, checks `sender == agentVault`, reverts
+   `PolicyViolation` on cap breach / off-allowlist), reserve custody (`depositPremium`/`depositBacking`/
+   `releasePayout`, `enforce` fallback flag). Before writing it, traced `PoolManager.swap` →
+   `Hooks.beforeSwap` in v4-core source to confirm exactly what `sender` means — see the correction to
+   Session 1's own PoolSwapTest assumption below. 10 tests, including a from-scratch decode of v4's
+   ERC-7751 `WrappedError` to assert on the real revert reason underneath it (`_decodeHookError` in
+   `SuretyHook.t.sol`) rather than hand-reconstructing the wrapper's raw assembly-level byte layout.
+2. **Correction to Session 1:** `PoolSwapTest` (the shared Uniswap test router) turns out to be the
+   *wrong* thing for `AgentVault.swap` to route through — `Hooks.beforeSwap`'s `sender` is whoever calls
+   `PoolManager.swap()` directly, which would be `PoolSwapTest`'s own address, not `AgentVault`'s,
+   breaking the "only the registered vault" check entirely. Fixed by having `AgentVault` implement
+   `IUnlockCallback` itself. Recorded in memory and `docs/ARCHITECTURE.md#uniswap` so this doesn't get
+   re-assumed next session.
+3. **`PricingEngine.sol` placeholder** (unblocks `PolicyRegistry`, which is B's file — see Session 1's
+   reasoning on why a placeholder here beats leaving `PolicyRegistry` uncompilable until the branches
+   merge). PRD §14's exact formula, verified against all three worked fixtures *exactly*
+   (625.00 / 133.33 / 890.63 USDC), not approximately.
+4. **`PolicyRegistry.sol`** (A3) — the ENS integration centerpiece. `issuePolicy` validates tier bounds
+   and the World ID enrollment signature, quotes and pulls the premium, deploys a fresh
+   `PermissionedResolver` proxy per policy via `VerifiableFactory` (Session 1's finding — not a shared
+   one), writes every `surety.*` record via `multicall`, grants the agent's key the streak-only setter
+   role, registers the non-transferable subname (no `ROLE_CAN_TRANSFER_ADMIN`), enforces the 2× reserve
+   invariant last. Minimal hand-written interfaces against the real ENSv2 API added at
+   `contracts/src/interfaces/ens/` — verified `VerifiableFactory.deployProxy`, the `Grant` struct,
+   `ITextSetter`/`IAddressSetter` signatures, and (critically) `namehash("eth")` with `cast namehash eth`
+   rather than trusting recall — my own memory of that constant was off by one hex digit. 11 tests.
+5. **`AgentVault.sol`** (A4) — per-node deposit/pay/withdraw ledger; `pay()` never blocks on a rule
+   breach (PRD §4.2); `swap()` implements `IUnlockCallback` and calls `PoolManager` directly per the
+   correction above, always an exact-input sale of MockUSDC (matches what the hook can check a cap
+   against pre-trade without a price quote). 9 tests against a real (hookless) `PoolManager`.
+6. **`AttackReplay.t.sol`** (A7) — wires all four real contracts (MockUSDC, PolicyRegistry, AgentVault,
+   SuretyHook) plus a real `PoolManager` together, issues a real policy, and replays PRD §8.2/§8.3/§23:
+   normal payments succeed; a manipulated over-cap swap and an off-allowlist swap both revert before any
+   funds move; a rule-breaking transfer is recorded, not blocked, and is publicly recomputable as a
+   violation from nothing but the payment + published policy. The claim-lifecycle half (file claim →
+   World ID re-auth → paid) is left for Person B to extend this file with, per TEAM_PLAN §4 B7.
+7. **`script/Deploy.s.sol` + `script/SeedDemo.s.sol`** (A6) — deploy order exactly matches PRD §15.9;
+   take the real verified Sepolia/ENSv2 addresses plus Person B's `WorldIdGate`/`ClaimRouter` as config,
+   logging a warning and skipping that wiring (rather than failing) if either is unset, since both are
+   owner-only calls safe to run as a follow-up once B's contracts land. **Not run against live
+   Sepolia** — no funded deployer wallet or RPC in this environment; compile-checked only.
+8. **`docs/CONTRACTS.md`, `docs/FEEDBACK.md`** (A9) — a contracts reference with file:line links
+   verified against the actual source (not hand-typed guesses — checked each one with `grep -n` after
+   writing the doc, found and fixed several off-by-a-few-lines mistakes), and genuine Uniswap developer
+   feedback from three real friction points hit this session (the `BaseHook`/`HookMiner` relocation, the
+   easy-to-misuse `beforeSwap` `sender` semantics, decoding `WrappedError` in tests).
+
+### Every test suite, every commit
+`forge test`: 45/45 passing across 6 test files after every commit this session (never committed red).
+`forge build`: zero warnings (fixed every lint hit along the way — unchecked ERC20 returns via
+`SafeERC20`, unsafe-typecast selector extractions via disable-comments with a stated reason, one
+state-mutability restriction). 7 commits this session, each independently buildable and testable.
+
+### Not done yet
+- [ ] Register `surety.eth` (or the fallback name) on Sepolia, and actually run `Deploy.s.sol` /
+      `SeedDemo.s.sol` against it — both need a funded deployer wallet, which this environment doesn't
+      have. First thing to do once one exists.
+- [ ] `npm run abi:export` (A8) — genuinely blocked, not skipped: `frontend/` and `backend/` don't exist
+      yet on `a/chain` (they're on `c/frontend`/`b/trust`), so there's nowhere to export ABIs *to* until
+      a sync-point merge. Re-visit right after merging with the other two branches.
+- [ ] Etherscan verification — needs the live deployment above.
+- [ ] Actually submitting the Uniswap Developer Feedback Form (the doc is ready; the form itself is a
+      human action, same-day-as-the-hook-ships per TEAM_PLAN).
+- [ ] Reconcile `PricingEngine.sol` with Person B's real (already-committed, on `origin/b/trust`) file
+      at the next merge — expect this to be closer to a no-op than a real conflict, since both
+      implement the same locked PRD §14 formula.
