@@ -148,7 +148,7 @@ export default function HomePage() {
                 Insure an agent →
               </Link>
               <Link href="/demo" className="btn" style={{ borderRadius: 999, padding: "12px 20px", background: "var(--surface)" }}>
-                Watch the attack replay
+                Watch the live attack
               </Link>
             </div>
 

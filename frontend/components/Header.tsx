@@ -15,8 +15,16 @@ const NAV: [string, string][] = [
   ["/dashboard", "My policies"],
   ["/policy", "Lookup"],
   ["/feed", "Feed"],
-  ["/demo", "Attack replay"],
+  ["/demo", "Live attack"],
+  ["/demo/scripted", "Scripted replay"],
 ];
+
+/** The nav entry for this path: the longest href that is the path or a parent of it. */
+function activeHref(pathname: string) {
+  return NAV.map(([href]) => href)
+    .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
+    .sort((a, b) => b.length - a.length)[0];
+}
 
 // Sticky, translucent bar over the paper grain — same construction as the reference header:
 // pixel wordmark, mono uppercase nav, network status + wallet on the right.
@@ -46,7 +54,7 @@ export function Header() {
       </Link>
       <nav style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
         {NAV.map(([href, label]) => {
-          const on = pathname === href || (href !== "/" && pathname.startsWith(href));
+          const on = href === activeHref(pathname);
           return (
             <Link key={href} href={href} className="link label" style={{ fontSize: 11, color: on ? "var(--ink)" : undefined }}>
               {on && <span style={{ color: "var(--signal)" }}>▸ </span>}

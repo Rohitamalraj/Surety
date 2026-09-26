@@ -396,7 +396,7 @@ Surety/
 │       ├── indexer/                  # event indexer
 │       └── routes/                   # data, idkit, payments-agent APIs
 ├── frontend/                         # Next.js 16
-│   ├── app/                          # /, /agents, /agents/payments, /insure, /dashboard,
+│   ├── app/                          # /, /agents, /agents/payments, /insure, /dashboard, /demo, /demo/scripted,
 │   │                                 # /policy/[agentName], /feed, /demo, /worldid/return
 │   ├── components/                   # ClaimFlow, HumanCheck, EnsVerify, PricingBreakdown, …
 │   └── lib/                          # api client, ENS reads, pricing (mirrors PricingEngine)
@@ -509,7 +509,7 @@ STAGE=pool        forge script script/DeployTrust.s.sol --rpc-url $SEPOLIA_RPC_U
 4. **Verify on ENS** — open the policy's ENS Explorer / ENS App links; the name, parent `surety.eth`, resolver and records are there.
 5. **Fund the agent** — policy page → Fund agent.
 6. **Run the payments agent** — `/agents/payments` → Authorize (one signature) → chat: *"pay 2 USDC to 0x… for lunch"*. It sends a real payment and shows *within policy ✓* or *rule broken → claimable*.
-7. **Attack Replay** (`/demo`) — **live mode** (default): the real LLM agent pays and swaps within policy; then an attacker emails its public inbox (Morse-coded, impersonating the policyholder) and the model decides what to do — in our tests `gpt-oss-20b` was manipulated 3/3 times: its swap to the attacker was **blocked by SuretyHook**, then its fallback transfer slipped through as an `OffAllowlist` violation. File claim → fresh World ID → **paid from the reserve**. **Scripted mode** replays the same on-chain steps deterministically as a fallback.
+7. **Live Attack** (`/demo`): the real LLM agent pays and swaps within policy; then an attacker emails its public inbox (Morse-coded, impersonating the policyholder) and the model decides what to do — in our tests `gpt-oss-20b` was manipulated 3/3 times: its swap to the attacker was **blocked by SuretyHook**, then its fallback transfer slipped through as an `OffAllowlist` violation. File claim → fresh World ID → **paid from the reserve**. **Scripted Replay** (`/demo/scripted`) runs the same on-chain steps deterministically, as a separate fallback page.
 8. **My policies** (`/dashboard`) — cover left, premiums, payouts and every claim for your wallet.
 
 ---
