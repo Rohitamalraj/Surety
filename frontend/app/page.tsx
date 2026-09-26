@@ -7,6 +7,7 @@ import { PoweredBy } from "@/components/PoweredBy";
 import { Wordmark } from "@/components/Wordmark";
 import { Footer } from "@/components/Footer";
 import MaskedHeading from "@/components/MaskedHeading";
+import MoltenMetal from "@/components/MoltenMetal";
 import { useTheme } from "@/lib/theme";
 
 const MECHANISM = [
@@ -74,6 +75,39 @@ export default function HomePage() {
               parametric cover for AI agents
             </span>
 
+            <div style={{ position: "relative", marginTop: 22 }}>
+              {/* Molten glow behind the heading: faded at the edges, no pointer events, blues per theme. */}
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: "-22% -14% -22% -10%",
+                  zIndex: 0,
+                  pointerEvents: "none",
+                  WebkitMaskImage: "radial-gradient(ellipse 60% 58% at 45% 50%, #000 30%, transparent 78%)",
+                  maskImage: "radial-gradient(ellipse 60% 58% at 45% 50%, #000 30%, transparent 78%)",
+                }}
+              >
+                <MoltenMetal
+                  color1={dark ? "#0b1f5c" : "#bfdbfe"}
+                  color2={dark ? "#2563eb" : "#60a5fa"}
+                  color3={dark ? "#93c5fd" : "#1d4ed8"}
+                  speed={0.35}
+                  scale={4}
+                  detail={3}
+                  glow={2.6}
+                  coreSize={0.16}
+                  swirl={1}
+                  fold={-0.2}
+                  blackPoint={0.02}
+                  brightness={2.2}
+                  colorMode="molten"
+                  grain
+                  grainIntensity={0.05}
+                  mouseInteraction={false}
+                  opacity={dark ? 0.95 : 0.7}
+                />
+              </div>
             <MaskedHeading
               tag="h1"
               text={HERO.heading}
@@ -90,8 +124,9 @@ export default function HomePage() {
               parallax={26}
               duration={1.1}
               stagger={0.09}
-              style={{ marginTop: 22, fontFamily: "var(--font-display), sans-serif" }}
+              style={{ position: "relative", zIndex: 1, fontFamily: "var(--font-display), sans-serif" }}
             />
+            </div>
 
             <p
               className="rise"
