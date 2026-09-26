@@ -56,15 +56,25 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
     uint256 public totalBackerPrincipal;
     mapping(address => uint256) public backerPrincipal;
 
-    /// @dev Reward-per-principal accumulator (MasterChef/StakingRewards pattern): O(1) per premium
-    /// deposit and per backer action no matter how many backers exist — minting shares to every backer
-    /// in a loop on every single premium charge would make `issuePolicy` gas cost unbounded (this repo
-    /// has been load-tested with 1,000 distinct backers/policyholders; see docs/DEEP_VERIFICATION.md).
-    uint256 public accRewardPerPrincipal;
-    mapping(address => uint256) public rewardDebt;
-    mapping(address => uint256) public claimable;
+    /// @notice Total vault shares outstanding — an ERC-4626-style claim on this vault's real LP
+    /// position, not a fixed nominal USDC entitlement. This is what makes fee income actually reach
+    /// backers: a share's redeemable value is `totalLiquidity * yourShares / totalShares` at withdrawal
+    /// time, so if the position's value has grown from trading fees since your shares were minted, your
+    /// existing shares are worth more automatically — nobody needs to "claim a fee bonus" separately.
+    /// (An earlier version of this contract paid out a fixed nominal entitlement instead, which left
+    /// fee income permanently stranded in the vault, unclaimed by anyone — see git history.)
+    uint256 public totalShares;
+    mapping(address => uint256) public sharesOf;
 
-    /// @notice Premium received while totalBackerPrincipal == 0 (no backer to attribute it to yet);
+    /// @dev Reward-per-principal accumulator (MasterChef/StakingRewards pattern), denominated in VAULT
+    /// SHARES per unit of backer principal: O(1) per premium deposit and per backer action no matter
+    /// how many backers exist — minting shares to every backer in a loop on every single premium charge
+    /// would make `issuePolicy` gas cost unbounded (this repo has been load-tested with 1,000 distinct
+    /// backers/policyholders; see docs/DEEP_VERIFICATION.md).
+    uint256 public accSharesPerPrincipal;
+    mapping(address => uint256) public shareDebt;
+
+    /// @notice Premium received while totalBackerPrincipal == 0 (no backer to attribute shares to yet);
     /// rolled into the next distribution instead of divided by zero or silently lost.
     uint256 public undistributedPremium;
 
@@ -134,24 +144,35 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
         _settle(backer);
         backerPrincipal[backer] += amount;
         totalBackerPrincipal += amount;
-        rewardDebt[backer] = backerPrincipal[backer] * accRewardPerPrincipal / WAD;
+        shareDebt[backer] = backerPrincipal[backer] * accSharesPerPrincipal / WAD;
         emit BackerPrincipalCredited(backer, amount);
     }
 
     function _settle(address backer) internal {
-        uint256 accrued = backerPrincipal[backer] * accRewardPerPrincipal / WAD;
-        uint256 pending = accrued - rewardDebt[backer];
+        uint256 accrued = backerPrincipal[backer] * accSharesPerPrincipal / WAD;
+        uint256 pending = accrued - shareDebt[backer];
         if (pending > 0) {
-            claimable[backer] += pending;
-            // Without this, the next _settle would recompute the same `accrued - rewardDebt` gap and
-            // credit the same yield again — rewardDebt must track what's already been folded in.
-            rewardDebt[backer] = accrued;
+            sharesOf[backer] += pending;
+            // Without this, the next _settle would recompute the same `accrued - shareDebt` gap and
+            // credit the same shares again — shareDebt must track what's already been folded in.
+            shareDebt[backer] = accrued;
         }
     }
 
+    /// @notice Vault shares currently owed to `backer` (already-settled balance plus any pending
+    /// accrual since their last principal change) — see `pendingYieldValue` for an approximate USDC
+    /// reading of what that's worth right now.
     function pendingYield(address backer) public view returns (uint256) {
-        uint256 accrued = backerPrincipal[backer] * accRewardPerPrincipal / WAD;
-        return claimable[backer] + (accrued - rewardDebt[backer]);
+        uint256 accrued = backerPrincipal[backer] * accSharesPerPrincipal / WAD;
+        return sharesOf[backer] + (accrued - shareDebt[backer]);
+    }
+
+    /// @notice Display-only approximation of `backer`'s pending shares in current USDC-side terms.
+    /// `withdrawYield` never uses this — it redeems shares directly against real liquidity, so this
+    /// value cannot be stale-priced into an unfair payout.
+    function pendingYieldValue(address backer) external view returns (uint256) {
+        if (totalShares == 0) return 0;
+        return totalYieldVaultValue() * pendingYield(backer) / totalShares;
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -160,17 +181,35 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
 
     function depositPremiumShare(uint256 amount) external {
         if (msg.sender != policyRegistry) revert NotPolicyRegistry(msg.sender);
+
+        // Snapshot value BEFORE pulling in the new amount, so newly-minted shares are priced fairly
+        // against what the vault was worth a moment ago — existing shareholders' per-share value is
+        // unaffected by someone else's deposit (standard vault fairness property).
+        uint256 valueBefore = totalYieldVaultValue();
         usdc.safeTransferFrom(msg.sender, address(this), amount);
 
-        uint256 toDistribute = amount + undistributedPremium;
         if (totalBackerPrincipal == 0) {
-            undistributedPremium = toDistribute;
-        } else {
-            undistributedPremium = 0;
-            accRewardPerPrincipal += toDistribute * WAD / totalBackerPrincipal;
+            // No backer exists yet to own shares for this — leave undeployed rather than mint shares
+            // nobody can be attributed to.
+            undistributedPremium += amount;
+            emit PremiumShareDeposited(amount, 0);
+            return;
         }
 
-        uint128 added = _addLiquidity(amount);
+        uint256 stranded = undistributedPremium;
+        undistributedPremium = 0;
+        uint256 toMintAgainst = amount + stranded;
+        // `stranded` (if any) already sits inside `valueBefore`'s balance but owns no shares yet —
+        // price it against everything ELSE in the vault, not against itself, or it would be counted
+        // on both sides of the share-price fraction.
+        uint256 priceBasis = valueBefore - stranded;
+
+        uint256 sharesToMint =
+            (totalShares == 0 || priceBasis == 0) ? toMintAgainst : toMintAgainst * totalShares / priceBasis;
+        totalShares += sharesToMint;
+        accSharesPerPrincipal += sharesToMint * WAD / totalBackerPrincipal;
+
+        uint128 added = _addLiquidity(toMintAgainst);
         emit PremiumShareDeposited(amount, added);
     }
 
@@ -178,23 +217,23 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
     // Backer yield withdrawal
     ////////////////////////////////////////////////////////////////////////
 
-    /// @notice Unwinds the caller's proportional share of this vault's LP position and pays out
-    /// whatever the pool actually returns for it — possibly less than the nominal entitlement if the
-    /// position lost value (impermanent loss). Expected and acceptable — see contract-level doc comment.
+    /// @notice Redeems the caller's shares for their exact proportional slice of the vault's REAL
+    /// current LP position (`totalLiquidity * shares / totalShares`) and pays out whatever the pool
+    /// actually returns for that slice — automatically including any trading-fee growth (or
+    /// impermanent-loss shrinkage) since those shares were minted. Expected and acceptable to net
+    /// either way — see the contract-level doc comment.
     function withdrawYield() external returns (uint256 amount0, uint256 amount1) {
         _settle(msg.sender);
-        uint256 entitlement = claimable[msg.sender];
-        if (entitlement == 0) revert NothingToWithdraw();
-        claimable[msg.sender] = 0;
+        uint256 shares = sharesOf[msg.sender];
+        if (shares == 0) revert NothingToWithdraw();
+        sharesOf[msg.sender] = 0;
 
-        uint256 valueBefore = totalYieldVaultValue();
-        // Clamp entitlement to valueBefore *before* the division so the ratio can never exceed 1 —
-        // guarantees the product below never exceeds totalLiquidity (already uint128), making the
-        // narrowing cast safe rather than merely hoped-safe.
-        uint256 boundedEntitlement = entitlement > valueBefore ? valueBefore : entitlement;
-        uint256 rawLiquidityToRemove = valueBefore == 0 ? 0 : uint256(totalLiquidity) * boundedEntitlement / valueBefore;
+        // shares <= totalShares always, so this ratio can never exceed totalLiquidity (already
+        // uint128) — the narrowing cast below is safe by construction, not merely hoped-safe. Computed
+        // before totalShares is decremented, against the same denominator `shares` was drawn from.
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint128 liquidityToRemove = uint128(rawLiquidityToRemove); // <= totalLiquidity (uint128) by the clamp above
+        uint128 liquidityToRemove = uint128(uint256(totalLiquidity) * shares / totalShares);
+        totalShares -= shares;
 
         (amount0, amount1) = _removeLiquidity(liquidityToRemove);
         if (amount0 > 0) IERC20(Currency.unwrap(poolKey.currency0)).safeTransfer(msg.sender, amount0);

@@ -7,6 +7,9 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {SwapParams} from "v4-core/src/types/PoolOperation.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
+import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
+import {FullMath} from "v4-core/src/libraries/FullMath.sol";
+import {FixedPoint128} from "v4-core/src/libraries/FixedPoint128.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {HookMiner} from "v4-hooks/src/utils/HookMiner.sol";
 
@@ -277,6 +280,61 @@ contract PremiumYieldVaultTest is Deployers {
         assertEq(hook.liquidReserve(), usdc.balanceOf(address(hook)));
     }
 
+    /// @dev Proves the fee-distribution fix directly: with a single backer owning 100% of the vault's
+    /// shares, real trading fees accrued on the position must show up in their withdrawal — before the
+    /// share-based rewrite, withdrawYield() paid out only the fixed nominal entitlement (187.5 USDC)
+    /// and left any fee surplus permanently stranded in the vault, unclaimed by anyone.
+    function test_withdrawYield_distributesFeeSurplus_notJustNominalEntitlement() public {
+        _fundBacker(backer1, 1_000_000e6); // sole backer -> owns 100% of shares once minted
+        _issue(_params(10_000e6, 500e6, 1, 1)); // 625 USDC premium -> 187.5 USDC yield portion
+
+        uint256 nominalEntitlement = 187_500_000;
+        assertEq(yieldVault.pendingYield(backer1), nominalEntitlement); // 1:1 at first-ever mint
+
+        // Real trading that fully crosses the vault's thin one-sided range and back, generating real,
+        // measurable protocol fees on the position (same mechanism proven in
+        // YieldSplitFullFlow.t.sol via StateLibrary.getFeeGrowthInside).
+        bool usdcIsToken0 = Currency.unwrap(poolKey.currency0) == address(usdc);
+        bool intoRange = !usdcIsToken0;
+        swapRouter.swap(
+            poolKey,
+            SwapParams({
+                zeroForOne: intoRange,
+                amountSpecified: -int256(500_000e6),
+                sqrtPriceLimitX96: intoRange ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+        swapRouter.swap(
+            poolKey,
+            SwapParams({
+                zeroForOne: !intoRange,
+                amountSpecified: -int256(500_000e6),
+                sqrtPriceLimitX96: !intoRange ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+
+        (uint256 fees0, uint256 fees1) = _uncollectedFees();
+        assertTrue(fees0 > 0 || fees1 > 0); // real fees genuinely accrued from the trading above
+
+        // The decisive proof: this backer owns 100% of the vault's shares, so their withdrawal must
+        // empty the ENTIRE position (totalLiquidity -> 0). Under the old, pre-fix code, withdrawYield()
+        // computed `liquidityToRemove` by targeting a fixed nominal VALUE (187.5 USDC) rather than a
+        // share of totalLiquidity — if fees had grown the position's value beyond that nominal figure,
+        // a "full" withdrawal by the sole owner would have left real, nonzero liquidity stranded behind,
+        // owned by nobody. The new share-based redemption can't do that: shares == totalShares here, so
+        // liquidityToRemove == totalLiquidity by construction, not by hoping the valuation lined up.
+        vm.prank(backer1);
+        (uint256 amount0, uint256 amount1) = yieldVault.withdrawYield();
+
+        assertEq(yieldVault.totalLiquidity(), 0);
+        assertEq(yieldVault.totalShares(), 0);
+        assertTrue(amount0 > 0 || amount1 > 0);
+    }
+
     function test_withdrawYield_removesRealLiquidityAndPaysBacker() public {
         _fundBacker(backer1, 1_000_000e6);
         _issue(_params(10_000e6, 500e6, 1, 1));
@@ -306,6 +364,19 @@ contract PremiumYieldVaultTest is Deployers {
 
     function _positionUsdcSide() internal view returns (uint256 usdcSide) {
         (usdcSide,) = _positionBothSides();
+    }
+
+    /// @dev Uncollected trading fees owed to the vault's position right now, read directly from the
+    /// pool's own fee-growth state rather than inferred from prices or balances — same method as
+    /// YieldSplitFullFlow.t.sol.
+    function _uncollectedFees() internal view returns (uint256 fees0, uint256 fees1) {
+        (uint128 liquidity, uint256 lastInside0, uint256 lastInside1) = StateLibrary.getPositionInfo(
+            manager, poolKey.toId(), address(yieldVault), yieldVault.tickLower(), yieldVault.tickUpper(), bytes32(0)
+        );
+        (uint256 curInside0, uint256 curInside1) =
+            StateLibrary.getFeeGrowthInside(manager, poolKey.toId(), yieldVault.tickLower(), yieldVault.tickUpper());
+        fees0 = FullMath.mulDiv(curInside0 - lastInside0, liquidity, FixedPoint128.Q128);
+        fees1 = FullMath.mulDiv(curInside1 - lastInside1, liquidity, FixedPoint128.Q128);
     }
 
     function _usdcSideOf(uint256 amount0, uint256 amount1) internal view returns (uint256) {
