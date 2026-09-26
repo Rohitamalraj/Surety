@@ -99,8 +99,8 @@ data.get("/demo", (c) => c.json(config.deployments.demo ?? null));
 
 data.post("/agent/step", async (c) => {
   const body = await c.req.json<{ step?: Step; node?: string }>().catch(() => ({}) as { step?: Step; node?: string });
-  if (!body.step || !["normal", "attack-swap", "violation"].includes(body.step)) {
-    return c.json({ error: "step must be normal | attack-swap | violation" }, 400);
+  if (!body.step || !["normal", "swap", "attack-swap", "violation"].includes(body.step)) {
+    return c.json({ error: "step must be normal | swap | attack-swap | violation" }, 400);
   }
   if (body.node && !isNode(body.node)) return c.json({ error: "bad node" }, 400);
   try {
