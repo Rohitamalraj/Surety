@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { isHex, type Hex } from "viem";
+import { decodeFunctionData, isAddress, isHex, toFunctionSelector, type Hex } from "viem";
+import { namehash } from "viem/ens";
 import { config } from "../config.js";
 import {
   abis,
@@ -74,14 +75,75 @@ data.get("/policy/:node", async (c) => {
       };
     }),
   );
+  const issuedEv = feed({ node, limit: 500 }).find((e) => e.type === "PolicyIssued");
+  const label = (issuedEv && (await labelOf(issuedEv.txHash, node))) ?? (config.deployments.demo?.node === node ? config.deployments.demo.label : undefined);
   return c.json({
     node,
-    label: config.deployments.demo?.node === node ? config.deployments.demo.label : undefined,
+    label,
     policy: jsonSafe(policy),
     payments,
     claims,
     events: feed({ node, limit: 200 }),
   });
+});
+
+/**
+ * `issuePolicy` doesn't emit the label, so read it from the purchase tx's calldata (cached; never
+ * changes). Smart accounts (e.g. MetaMask's EIP-7702 delegation) wrap the call, so look for the
+ * embedded `issuePolicy` selector anywhere in the input, not just at the start.
+ */
+const ISSUE_SELECTOR = toFunctionSelector("issuePolicy((string,address,address,uint256,uint256,address[],uint8),bytes32,uint64,bytes)").slice(2);
+const labels = new Map<string, string | null>();
+async function labelOf(txHash: Hex, node: Hex): Promise<string | null> {
+  if (labels.has(txHash)) return labels.get(txHash)!;
+  let label: string | null = null;
+  try {
+    const input = (await publicClient.getTransaction({ hash: txHash })).input.slice(2);
+    for (let i = input.indexOf(ISSUE_SELECTOR); i !== -1 && label === null; i = input.indexOf(ISSUE_SELECTOR, i + 1)) {
+      if (i % 2 !== 0) continue;
+      try {
+        const call = decodeFunctionData({ abi: abis.registry, data: `0x${input.slice(i)}` });
+        if (call.functionName === "issuePolicy" && namehash(`${call.args[0].label}.surety.eth`) === node.toLowerCase()) label = call.args[0].label;
+      } catch {}
+    }
+  } catch {}
+  labels.set(txHash, label);
+  return label;
+}
+
+/** Every issued policy, newest first — or only `holder`'s (the dashboard). Live on-chain state per policy. */
+data.get("/policies", async (c) => {
+  const holder = c.req.query("holder")?.toLowerCase();
+  if (holder && !isAddress(holder)) return c.json({ error: "holder must be an address" }, 400);
+  const issued = feed({ limit: 500 })
+    .filter((e) => e.type === "PolicyIssued" && e.node && (!holder || String(e.data.policyholder).toLowerCase() === holder))
+    .reverse();
+  const out = await Promise.all(
+    issued.map(async (e) => {
+      const node = e.node!;
+      const [policy, label, claims] = await Promise.all([
+        readPolicy(node),
+        labelOf(e.txHash, node),
+        Promise.all(
+          claimIdsFor(node).map(async (id) => {
+            const cl = await readClaim(id);
+            return { claimId: id.toString(), paymentId: cl.paymentId.toString(), amount: cl.amount.toString(), status: ClaimStatus[cl.status], filedAt: Number(cl.filedAt) };
+          }),
+        ),
+      ]);
+      return {
+        node,
+        label,
+        premium: String(e.data.premium),
+        issuedTx: e.txHash,
+        issuedAt: e.timestamp,
+        policy: jsonSafe(policy),
+        claims,
+        payments: paymentEvents(node).length,
+      };
+    }),
+  );
+  return c.json(out);
 });
 
 data.get("/claims/:id", async (c) => {

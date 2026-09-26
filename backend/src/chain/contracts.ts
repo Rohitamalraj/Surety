@@ -25,6 +25,8 @@ const T_SWAP = "(bool zeroForOne,int256 amountSpecified,uint160 sqrtPriceLimitX9
 
 export const abis = {
   registry: parseAbi([
+    "struct IssueParams { string label; address agent; address payoutAddr; uint256 coverageLimit; uint256 perTxCap; address[] allowlist; uint8 tier; }",
+    "function issuePolicy(IssueParams p, bytes32 subHash, uint64 expiry, bytes enrollSig) returns (bytes32)",
     `function getPolicy(bytes32 node) view returns (${T_POLICY})`,
     "function isAllowed(bytes32 node, address counterparty) view returns (bool)",
     "function totalCoverage() view returns (uint256)",
