@@ -12,7 +12,7 @@ import {MockUSDC} from "../src/MockUSDC.sol";
 import {MockPolicyRegistry} from "./mocks/MockPolicyRegistry.sol";
 import {IPolicyRegistry} from "../src/interfaces/IPolicyRegistry.sol";
 import {IAgentVault} from "../src/interfaces/IAgentVault.sol";
-import {PolicyRecord, Payment} from "../src/interfaces/SuretyTypes.sol";
+import {PolicyRecord, Payment, ViolationType} from "../src/interfaces/SuretyTypes.sol";
 
 /// @dev Unit-level tests against a plain, hookless pool — proving AgentVault's own bookkeeping and its
 /// direct PoolManager.unlock/swap mechanics work. The full AgentVault + SuretyHook enforcement story is
@@ -123,6 +123,61 @@ contract AgentVaultTest is Deployers {
     function test_getPayment_revertsForUnknownId() public {
         vm.expectRevert(abi.encodeWithSelector(AgentVault.InvalidPaymentId.selector, 1));
         vault.getPayment(1);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // pay — violation recorded in the SAME transaction, never left for later
+    ////////////////////////////////////////////////////////////////////////
+
+    function test_pay_recordsCapBreachViolation_immediatelyQueryable_sameTransaction() public {
+        usdc.approve(address(vault), 10_000e6);
+        vault.deposit(NODE, 10_000e6);
+
+        vm.prank(agent);
+        // Over perTxCap (5,000) but to an allowed counterparty — isolates CapBreach specifically.
+        uint256 paymentId = vault.pay(NODE, counterparty, 9_000e6);
+
+        // No separate call to "compute" anything afterward — this is the same transaction/call that
+        // made the payment; the violation is already sitting in storage, ready to read.
+        uint256 violationId = vault.violationForPayment(paymentId);
+        assertEq(violationId, 1);
+
+        AgentVault.Violation memory v = vault.getViolation(violationId);
+        assertEq(v.node, NODE);
+        assertEq(v.paymentId, paymentId);
+        assertEq(uint8(v.vtype), uint8(ViolationType.CapBreach));
+        assertEq(v.amount, 9_000e6);
+        assertEq(v.timestamp, block.timestamp);
+    }
+
+    function test_pay_recordsOffAllowlistViolation_immediatelyQueryable() public {
+        usdc.approve(address(vault), 10_000e6);
+        vault.deposit(NODE, 10_000e6);
+
+        vm.prank(agent);
+        // Within perTxCap but to a counterparty never added to the allowlist.
+        uint256 paymentId = vault.pay(NODE, address(0xBAD1BAD1), 1_000e6);
+
+        uint256 violationId = vault.violationForPayment(paymentId);
+        assertEq(violationId, 1);
+        assertEq(uint8(vault.getViolation(violationId).vtype), uint8(ViolationType.OffAllowlist));
+    }
+
+    function test_pay_recordsNoViolation_forCleanPayment() public {
+        usdc.approve(address(vault), 10_000e6);
+        vault.deposit(NODE, 10_000e6);
+
+        vm.prank(agent);
+        uint256 paymentId = vault.pay(NODE, counterparty, 1_000e6); // under cap, allowed counterparty
+
+        assertEq(vault.violationForPayment(paymentId), 0);
+        vm.expectRevert(abi.encodeWithSelector(AgentVault.InvalidViolationId.selector, 0));
+        vault.getViolation(0);
+    }
+
+    function test_getViolation_revertsForUnknownId() public {
+        vm.expectRevert(abi.encodeWithSelector(AgentVault.InvalidViolationId.selector, 1));
+        vault.getViolation(1);
     }
 
     ////////////////////////////////////////////////////////////////////////

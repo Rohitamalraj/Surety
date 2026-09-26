@@ -14,7 +14,7 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 
 import {IAgentVault} from "./interfaces/IAgentVault.sol";
 import {IPolicyRegistry} from "./interfaces/IPolicyRegistry.sol";
-import {Payment, PolicyRecord} from "./interfaces/SuretyTypes.sol";
+import {Payment, PolicyRecord, ViolationType} from "./interfaces/SuretyTypes.sol";
 
 /// @notice Owner: Person A. PRD §15.4. Every agent's spending wallet, keyed by ENS node. `pay()` records
 /// every transfer and never blocks on a rule breach — a recorded breach is the insured event (PRD §4.2).
@@ -42,6 +42,23 @@ contract AgentVault is IAgentVault, IUnlockCallback, Ownable {
     mapping(bytes32 => uint256) internal _balances;
     Payment[] internal _payments;
 
+    /// @notice Recorded in the SAME transaction as the payment that triggered it — never left to be
+    /// recomputed later. Person B's ViolationOracle (contracts/src/interfaces/IViolationOracle.sol)
+    /// recomputes CapBreach/OffAllowlist from public data on demand instead; this is a stronger,
+    /// additive guarantee (an immutable, queryable-forever record of the determination made at the
+    /// exact moment the payment executed), not a replacement for that interface — not part of the
+    /// locked IAgentVault API, same reason `swap()` above isn't either.
+    struct Violation {
+        bytes32 node;
+        uint256 paymentId;
+        ViolationType vtype;
+        uint256 amount;
+        uint64 timestamp;
+    }
+
+    Violation[] internal _violations;
+    mapping(uint256 => uint256) internal _violationIdByPaymentId; // paymentId => violationId, 0 = none
+
     struct SwapCallbackData {
         bytes32 node;
         PoolKey key;
@@ -51,6 +68,9 @@ contract AgentVault is IAgentVault, IUnlockCallback, Ownable {
 
     event SwapExecuted(bytes32 indexed node, uint256 amountIn, uint256 amountOut);
     event CanonicalPoolSet(bytes32 poolId);
+    event ViolationRecorded(
+        uint256 indexed violationId, bytes32 indexed node, uint256 paymentId, ViolationType vtype, uint256 amount
+    );
 
     error NotAgent(bytes32 node, address caller);
     error NotPolicyholder(bytes32 node, address caller);
@@ -58,6 +78,7 @@ contract AgentVault is IAgentVault, IUnlockCallback, Ownable {
     error OnlyExactInputUsdcSwapsSupported();
     error PoolNotUsdcPaired();
     error InvalidPaymentId(uint256 paymentId);
+    error InvalidViolationId(uint256 violationId);
     error NotPoolManager(address caller);
     error CanonicalPoolNotSet();
     error UnauthorizedPool();
@@ -87,6 +108,8 @@ contract AgentVault is IAgentVault, IUnlockCallback, Ownable {
     }
 
     /// @inheritdoc IAgentVault
+    /// @dev Classifies and records the violation determination (if any) in this same transaction —
+    /// see the `Violation` struct's own doc comment for why this doesn't replace ViolationOracle.
     function pay(bytes32 node, address to, uint256 amount) external returns (uint256 paymentId) {
         PolicyRecord memory policy = registry.getPolicy(node);
         if (msg.sender != policy.agent) revert NotAgent(node, msg.sender);
@@ -98,6 +121,41 @@ contract AgentVault is IAgentVault, IUnlockCallback, Ownable {
         _payments.push(Payment({node: node, to: to, amount: amount, timestamp: uint64(block.timestamp)}));
         paymentId = _payments.length;
         emit PaymentMade(node, paymentId, to, amount);
+
+        ViolationType vtype = _classify(policy, node, to, amount);
+        if (vtype != ViolationType.None) {
+            _violations.push(
+                Violation({node: node, paymentId: paymentId, vtype: vtype, amount: amount, timestamp: uint64(block.timestamp)})
+            );
+            uint256 violationId = _violations.length;
+            _violationIdByPaymentId[paymentId] = violationId;
+            emit ViolationRecorded(violationId, node, paymentId, vtype, amount);
+        }
+    }
+
+    /// @dev Same order as PRD §15.6 R-ORA-1 / ViolationOracle.check: CapBreach checked before
+    /// OffAllowlist, first match wins. Attested (stretch, third-party-signed) is out of scope here —
+    /// it isn't derivable from this payment alone.
+    function _classify(PolicyRecord memory policy, bytes32 node, address to, uint256 amount)
+        internal
+        view
+        returns (ViolationType)
+    {
+        if (amount > policy.perTxCap) return ViolationType.CapBreach;
+        if (!registry.isAllowed(node, to)) return ViolationType.OffAllowlist;
+        return ViolationType.None;
+    }
+
+    /// @notice The violation recorded for `paymentId`, if any — reverts if none was recorded (either the
+    /// payment was clean, or `paymentId` doesn't exist; use `violationForPayment` to distinguish).
+    function getViolation(uint256 violationId) external view returns (Violation memory) {
+        if (violationId == 0 || violationId > _violations.length) revert InvalidViolationId(violationId);
+        return _violations[violationId - 1];
+    }
+
+    /// @notice 0 if `paymentId` had no recorded violation (clean payment, or unknown id).
+    function violationForPayment(uint256 paymentId) external view returns (uint256 violationId) {
+        return _violationIdByPaymentId[paymentId];
     }
 
     /// @notice Only the policyholder — pulls unspent deposited MockUSDC back out of the vault.
