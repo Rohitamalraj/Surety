@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b2a8f"/>
+      <stop offset="0.45" stop-color="#2563eb"/>
+      <stop offset="0.75" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#60a5fa"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.72" cy="0.35" r="0.55">
+      <stop offset="0" stop-color="#93c5fd" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#93c5fd" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="deep" cx="0.15" cy="0.85" r="0.6">
+      <stop offset="0" stop-color="#061a5c" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#061a5c" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <rect width="1600" height="900" fill="url(#deep)"/>
+  <rect width="1600" height="900" fill="url(#glow)"/>
+  <g fill="none" stroke="#dbeafe" stroke-opacity="0.35" stroke-width="2">
+    <path d="M-50 120 C 300 40, 520 260, 820 180 S 1300 60, 1650 200"/>
+    <path d="M-50 200 C 280 120, 540 330, 840 250 S 1320 130, 1650 280"/>
+    <path d="M-50 280 C 260 200, 560 400, 860 320 S 1340 200, 1650 360"/>
+    <path d="M-50 360 C 240 280, 580 470, 880 390 S 1360 270, 1650 440"/>
+    <path d="M-50 440 C 220 360, 600 540, 900 460 S 1380 340, 1650 520"/>
+    <path d="M-50 520 C 200 440, 620 610, 920 530 S 1400 410, 1650 600"/>
+    <path d="M-50 600 C 180 520, 640 680, 940 600 S 1420 480, 1650 680"/>
+    <path d="M-50 680 C 160 600, 660 750, 960 670 S 1440 550, 1650 760"/>
+    <path d="M-50 760 C 140 680, 680 820, 980 740 S 1460 620, 1650 840"/>
+  </g>
+  <g fill="none" stroke="#ffffff" stroke-opacity="0.18" stroke-width="1">
+    <circle cx="1150" cy="320" r="140"/>
+    <circle cx="1150" cy="320" r="190"/>
+    <circle cx="1150" cy="320" r="250"/>
+  </g>
+</svg>

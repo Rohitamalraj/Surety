@@ -6,6 +6,7 @@ import { LineArt } from "@/components/LineArt";
 import { PoweredBy } from "@/components/PoweredBy";
 import { Wordmark } from "@/components/Wordmark";
 import { Footer } from "@/components/Footer";
+import MaskedHeading from "@/components/MaskedHeading";
 import { useTheme } from "@/lib/theme";
 
 const MECHANISM = [
@@ -33,7 +34,7 @@ const MECHANISM = [
 ];
 
 const HERO = {
-  heading: "Insure the agent.",
+  heading: "INSURE THE ON-CHAIN AGENTS",
   body:
     "Parametric insurance for AI agents that spend money. When an insured agent breaks its own published rules, the payout is a contract call. No adjuster, no lawsuit, same day.",
 };
@@ -73,21 +74,24 @@ export default function HomePage() {
               parametric cover for AI agents
             </span>
 
-            <h1
-              className="rise"
-              style={{
-                animationDelay: "80ms",
-                fontSize: "clamp(44px, 7.2vw, 96px)",
-                margin: "22px 0 0",
-                lineHeight: 0.98,
-                minHeight: "2em",
-                maxWidth: "12ch",
-                fontWeight: 800,
-              }}
-            >
-              {HERO.heading}
-              <span className="tw-caret" aria-hidden />
-            </h1>
+            <MaskedHeading
+              tag="h1"
+              text={HERO.heading}
+              src="/hero-fill.svg"
+              reveal="rise"
+              trigger="mount"
+              align="left"
+              weight={800}
+              tracking={-0.02}
+              lineHeight={0.96}
+              textScale={0.13}
+              fillScale={1.25}
+              drift={18}
+              parallax={26}
+              duration={1.1}
+              stagger={0.09}
+              style={{ marginTop: 22, fontFamily: "var(--font-display), sans-serif" }}
+            />
 
             <p
               className="rise"
