@@ -35,7 +35,7 @@ contract MockUSDCTest is Test {
         assertEq(usdc.allowance(address(this), address(0xBEEF)), 40e6);
 
         vm.prank(address(0xBEEF));
-        usdc.transferFrom(address(this), address(0xCAFE), 40e6);
+        assertTrue(usdc.transferFrom(address(this), address(0xCAFE), 40e6));
         assertEq(usdc.balanceOf(address(0xCAFE)), 40e6);
         assertEq(usdc.balanceOf(address(this)), 60e6);
     }
