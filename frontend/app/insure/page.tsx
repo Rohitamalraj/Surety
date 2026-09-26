@@ -12,6 +12,7 @@ import { short, toUnits } from "@/lib/format";
 import { useDeployments } from "@/lib/hooks";
 import { maxTier, quote, TIER_NAMES } from "@/lib/pricing";
 import { nodeFor } from "@/lib/ens";
+import { AGENT_PROFILES, profileByKey } from "@/lib/agents";
 import { LineArt } from "@/components/LineArt";
 import { HumanCheck } from "@/components/HumanCheck";
 import { PricingBreakdown } from "@/components/PricingBreakdown";
@@ -38,8 +39,10 @@ interface Enrollment {
   sig: Hex;
 }
 
-function CreateInner() {
-  const wid = useSearchParams().get("wid");
+function InsureInner() {
+  const params = useSearchParams();
+  const wid = params.get("wid");
+  const profile = profileByKey(params.get("type"));
   const { address, isConnected } = useConnection();
   const connect = useConnect();
   const client = usePublicClient();
@@ -61,14 +64,27 @@ function CreateInner() {
       if (saved) setForm({ ...EMPTY, ...(JSON.parse(saved) as Form) });
     } catch {}
   }, []);
-  const update = (patch: Partial<Form>) =>
+  const update = (patch: Partial<Form> | ((f: Form) => Partial<Form>)) =>
     setForm((f) => {
-      const next = { ...f, ...patch };
+      const next = { ...f, ...(typeof patch === "function" ? patch(f) : patch) };
       try {
         sessionStorage.setItem(FORM_KEY, JSON.stringify(next));
       } catch {}
       return next;
     });
+
+  // Coming from an agent profile (/insure?type=…): pre-fill its rules. Not on the World ID return trip,
+  // where the saved form is what the user already chose.
+  useEffect(() => {
+    if (!profile || wid) return;
+    update((f) => ({
+      coverage: String(profile.coverage),
+      cap: String(profile.cap),
+      tier: profile.tier,
+      label: f.label || `${profile.label}-${Math.random().toString(36).slice(2, 6)}`,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.key, wid]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
@@ -207,13 +223,32 @@ function CreateInner() {
           <LineArt shape="signal" className="h-full w-full" />
         </div>
         <div className="relative z-10 mx-auto max-w-6xl px-6" style={{ padding: "clamp(56px, 9vw, 110px) 24px clamp(40px, 6vw, 70px)" }}>
-          <div className="label rise">{"create policy"}</div>
+          <div className="label rise">{profile ? `insure · ${profile.name.toLowerCase()}` : "insure"}</div>
           <h1 className="rise" style={{ fontSize: "clamp(40px, 7.5vw, 92px)", marginTop: 14, lineHeight: 0.95, maxWidth: "14ch", animationDelay: "80ms" }}>
             Insure your agent.
           </h1>
           <p className="rise" style={{ marginTop: 18, color: "var(--muted)", maxWidth: "56ch", fontSize: 15, animationDelay: "160ms" }}>
             Publish its rules as an ENS name, prove you&apos;re the human behind it, and pay a premium computed in front of you.
           </p>
+          <div className="rise" style={{ marginTop: 22, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", animationDelay: "220ms" }}>
+            <span className="label" style={{ marginRight: 4 }}>
+              start from
+            </span>
+            {AGENT_PROFILES.map((p) => (
+              <Link key={p.key} href={`/insure?type=${p.key}`} className={`filter-pill ${profile?.key === p.key ? "filter-on" : ""}`}>
+                {p.name.replace(" agent", "")}
+              </Link>
+            ))}
+            <Link href="/agents" className="link label" style={{ marginLeft: 4 }}>
+              compare profiles →
+            </Link>
+          </div>
+          {profile && (
+            <p className="rise" style={{ marginTop: 12, fontSize: 13, color: "var(--muted)", maxWidth: "60ch" }}>
+              Rules pre-filled for a {profile.name.toLowerCase()}. Put {profile.allowlistHint} on the allowlist, then adjust
+              anything.
+            </p>
+          )}
         </div>
       </section>
 
@@ -270,7 +305,7 @@ function CreateInner() {
                       </span>
                     ) : (
                       address && (
-                        <a className="btn btn-primary" href={worldIdStartUrl({ purpose: "enroll", address, returnTo: "/create" })}>
+                        <a className="btn btn-primary" href={worldIdStartUrl({ purpose: "enroll", address, returnTo: "/insure" })}>
                           ◎ {enroll ? "Enrollment expired — verify again" : "Verify with World ID"}
                         </a>
                       )
@@ -388,10 +423,10 @@ function CreateInner() {
   );
 }
 
-export default function CreatePage() {
+export default function InsurePage() {
   return (
     <Suspense fallback={<div className="label flick" style={{ padding: 80 }}>loading…</div>}>
-      <CreateInner />
+      <InsureInner />
     </Suspense>
   );
 }
