@@ -30,7 +30,7 @@ export default function FeedPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6" style={{ padding: "clamp(48px, 10vw, 110px) 24px 100px" }}>
-      <PageHead label="// public audit trail" title="Everything, on the record.">
+      <PageHead label="public audit trail" title="Everything, on the record.">
         Every purchase, payment, violation, claim, hold and payout is a public event. Nothing here needs special access; open any
         row on a block explorer.
       </PageHead>
@@ -59,13 +59,13 @@ export default function FeedPage() {
           <div className="sticky-side" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="side-card">
               <div className="label" style={{ marginBottom: 12 }}>
-                {"// solvency · reserve vs 2× coverage"}
+                {"solvency · reserve vs 2× coverage"}
               </div>
               <SolvencyBar />
             </div>
-            <div style={{ position: "relative", height: 120, background: "var(--dark)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-              <DitherArt shape="field" invert gap={4} className="h-full w-full" />
-              <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--dark-ink)", opacity: 0.8 }}>
+            <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+              <DitherArt shape="field" accent gap={4} className="h-full w-full" />
+              <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
                 payouts come only from the liquid reserve
               </div>
             </div>
@@ -108,7 +108,7 @@ function BackThePool() {
   return (
     <div className="side-card">
       <div className="label" style={{ marginBottom: 10 }}>
-        {"// back the pool"}
+        {"back the pool"}
       </div>
       {!usdcAddr ? (
         <div style={{ fontSize: 12, color: "var(--muted)" }}>Backing uses MockUSDC, which isn&apos;t deployed on this network yet.</div>

@@ -26,7 +26,7 @@ export default function PolicyLookupPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6" style={{ padding: "clamp(48px, 10vw, 110px) 24px 100px" }}>
-      <PageHead label="// counterparty lookup" title="Is this agent insured?">
+      <PageHead label="counterparty lookup" title="Is this agent insured?">
         Every Surety policy is an ENS name. Look one up to see its published rules, what it has paid, and every claim, with
         zero custom integration.
       </PageHead>
@@ -48,9 +48,9 @@ export default function PolicyLookupPage() {
         </button>
       </form>
 
-      <div style={{ position: "relative", height: 110, marginTop: 28, background: "var(--dark)", borderRadius: "var(--radius)", overflow: "hidden" }}>
-        <DitherArt shape="loop" invert gap={4} className="h-full w-full" />
-        <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--dark-ink)", opacity: 0.8 }}>
+      <div style={{ position: "relative", height: 110, marginTop: 28, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
+        <DitherArt shape="loop" accent gap={4} className="h-full w-full" />
+        <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
           the rules are public · resolver looked up fresh on every read
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function PolicyLookupPage() {
       )}
 
       <div className="label" style={{ marginTop: 32, marginBottom: 6 }}>
-        {"// recently issued"}
+        {"recently issued"}
       </div>
       {issued.length === 0 && <div className="label" style={{ padding: "18px 0", color: "var(--muted)" }}>no policies issued on this network yet.</div>}
       {issued.map((e) => (

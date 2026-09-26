@@ -36,7 +36,7 @@ export default function WorldIdReturnPage() {
   return (
     <main className="mx-auto max-w-3xl px-6" style={{ padding: "120px 24px" }}>
       <div className="label" style={{ marginBottom: 10 }}>
-        {"// world id"}
+        {"world id"}
       </div>
       <h1 style={{ fontSize: 40, marginBottom: 20 }}>Returning from World ID</h1>
       <Suspense fallback={<div className="label flick">…</div>}>

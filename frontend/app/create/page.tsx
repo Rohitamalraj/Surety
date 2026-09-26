@@ -12,7 +12,7 @@ import { short, toUnits } from "@/lib/format";
 import { useDeployments } from "@/lib/hooks";
 import { maxTier, quote, TIER_NAMES } from "@/lib/pricing";
 import { nodeFor } from "@/lib/ens";
-import { InteractiveDither } from "@/components/InteractiveDither";
+import { DitherArt } from "@/components/DitherArt";
 import { HumanCheck } from "@/components/HumanCheck";
 import { PricingBreakdown } from "@/components/PricingBreakdown";
 import { PoweredBy } from "@/components/PoweredBy";
@@ -198,17 +198,15 @@ function CreateInner() {
     <main>
       {/* ---- hero band ---- */}
       <section className="relative overflow-hidden" style={{ borderBottom: "1px solid var(--line)" }}>
-        <InteractiveDither className="absolute inset-0 h-full w-full" />
         <div
-          className="absolute inset-0"
-          style={{
-            pointerEvents: "none",
-            background:
-              "linear-gradient(90deg, color-mix(in oklch, var(--bg) 88%, transparent) 0%, color-mix(in oklch, var(--bg) 50%, transparent) 45%, transparent 80%), linear-gradient(0deg, var(--bg), transparent 40%)",
-          }}
-        />
+          aria-hidden
+          className="absolute inset-y-0 right-0 hidden md:block"
+          style={{ width: "46%", background: "var(--tint)", borderLeft: "1px solid var(--line)" }}
+        >
+          <DitherArt shape="signal" accent gap={5} className="h-full w-full" />
+        </div>
         <div className="relative z-10 mx-auto max-w-6xl px-6" style={{ padding: "clamp(56px, 9vw, 110px) 24px clamp(40px, 6vw, 70px)" }}>
-          <div className="label rise">{"// create policy"}</div>
+          <div className="label rise">{"create policy"}</div>
           <h1 className="rise" style={{ fontSize: "clamp(40px, 7.5vw, 92px)", marginTop: 14, lineHeight: 0.95, maxWidth: "14ch", animationDelay: "80ms" }}>
             Insure your agent.
           </h1>

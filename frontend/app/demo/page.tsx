@@ -189,7 +189,7 @@ function DemoInner() {
         <aside className="term-left">
           <div className="term-sticky">
             <div className="label" style={{ marginBottom: 8 }}>
-              {"// on stage"}
+              {"on stage"}
             </div>
             <h1 style={{ fontSize: 30, lineHeight: 1, marginBottom: 14 }}>Attack Replay</h1>
             <div className="steps">
@@ -215,9 +215,9 @@ function DemoInner() {
             <span className="label">{policy.data ? "policy live" : demoErr ?? "loading…"}</span>
           </div>
 
-          <div style={{ position: "relative", height: 120, background: "var(--dark)", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 16 }}>
-            <DitherArt shape="signal" invert gap={4} className="h-full w-full" />
-            <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--dark-ink)", opacity: 0.8 }}>
+          <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 16 }}>
+            <DitherArt shape="signal" accent gap={4} className="h-full w-full" />
+            <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
               enforce where you can · insure what gets through
             </div>
           </div>
@@ -291,7 +291,7 @@ function DemoInner() {
           <div className="term-sticky" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div className="side-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <span className="label">{"// policy"}</span>
+                <span className="label">{"policy"}</span>
                 {policy.data && <Pill tone={policy.data.policy.active ? "gain" : "loss"}>{policy.data.policy.active ? "active" : "exhausted"}</Pill>}
               </div>
               {policy.data ? (
@@ -331,7 +331,7 @@ function DemoInner() {
             </div>
             <div className="side-card" style={{ paddingBottom: 6 }}>
               <div className="label" style={{ marginBottom: 4 }}>
-                {"// audit trail"}
+                {"audit trail"}
               </div>
               {(feed.data ?? []).slice(0, 6).map((e) => (
                 <EventRow key={e.id} e={e} showNode={false} />

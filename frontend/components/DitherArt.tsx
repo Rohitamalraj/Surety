@@ -73,11 +73,14 @@ export function DitherArt({
   shape,
   className,
   invert = false,
+  accent = false,
   gap = 5,
 }: {
   shape: DitherShape;
   className?: string;
   invert?: boolean;
+  /** blue dots, for the light-blue illustration panels */
+  accent?: boolean;
   gap?: number;
 }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
@@ -185,10 +188,10 @@ export function DitherArt({
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, [shape, invert, gap]);
+  }, [shape, invert, accent, gap]);
 
   return (
-    <div className={className} aria-hidden="true" style={{ color: invert ? "var(--dark-ink)" : "var(--ink)" }}>
+    <div className={className} aria-hidden="true" style={{ color: accent ? "var(--signal)" : invert ? "var(--dark-ink)" : "var(--ink)" }}>
       <canvas ref={ref} style={{ width: "100%", height: "100%", display: "block" }} />
     </div>
   );

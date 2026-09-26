@@ -23,7 +23,7 @@ export function PricingBreakdown(input: QuoteInput) {
   return (
     <div className="formula">
       <div className="label" style={{ marginBottom: 6 }}>
-        {"// premium, computed live"}
+        {"premium, computed live"}
       </div>
       {rows.map(([sym, expr, val]) => (
         <div key={sym} className="formula-row">

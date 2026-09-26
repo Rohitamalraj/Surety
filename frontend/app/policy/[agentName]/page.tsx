@@ -42,7 +42,7 @@ function PolicyInner({ agentName }: { agentName: string }) {
   if (policy.isError) {
     return (
       <main className="mx-auto max-w-5xl px-6" style={{ padding: "clamp(48px, 10vw, 110px) 24px 100px" }}>
-        <PageHead label="// policy" title={title}>
+        <PageHead label="policy" title={title}>
           No Surety policy found for this name. {String((policy.error as Error)?.message ?? "")}
         </PageHead>
       </main>
@@ -53,7 +53,7 @@ function PolicyInner({ agentName }: { agentName: string }) {
 
   return (
     <main className="mx-auto px-6" style={{ maxWidth: 1180, padding: "clamp(48px, 9vw, 100px) 24px 100px" }}>
-      <PageHead label="// policy" title={<span style={{ overflowWrap: "anywhere" }}>{title}</span>}>
+      <PageHead label="policy" title={<span style={{ overflowWrap: "anywhere" }}>{title}</span>}>
         {p ? (
           <>
             Policyholder {short(p.policyholder)} · agent {short(p.agent)} · payouts only to {short(p.payoutAddr)}, fixed at purchase.
@@ -76,7 +76,7 @@ function PolicyInner({ agentName }: { agentName: string }) {
         {/* ---- payments + claims ---- */}
         <section style={{ minWidth: 0 }}>
           <div className="label" style={{ marginBottom: 8 }}>
-            {"// claims"}
+            {"claims"}
           </div>
           {policy.data?.claims.length === 0 && <div className="label" style={{ padding: "8px 0 16px", color: "var(--muted)" }}>no claims filed.</div>}
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -97,7 +97,7 @@ function PolicyInner({ agentName }: { agentName: string }) {
           </div>
 
           <div className="label" style={{ marginTop: 32, marginBottom: 8 }}>
-            {"// agent payments · every transfer is recorded"}
+            {"agent payments · every transfer is recorded"}
           </div>
           <div className="table-wrap">
             <table className="ledger">
@@ -151,7 +151,7 @@ function PolicyInner({ agentName }: { agentName: string }) {
             <EnsCard name={label} />
             <div className="side-card" style={{ paddingBottom: 6 }}>
               <div className="label" style={{ marginBottom: 4 }}>
-                {"// audit trail · public events"}
+                {"audit trail · public events"}
               </div>
               {(feed.data ?? []).slice(0, 10).map((e) => (
                 <EventRow key={e.id} e={e} showNode={false} />
@@ -184,7 +184,7 @@ function EnsCard({ name }: { name?: string }) {
   return (
     <div className="side-card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-        <span className="label">{"// ens records"}</span>
+        <span className="label">{"ens records"}</span>
         <PoweredBy sponsor="ens" label={null} />
       </div>
       {records === undefined && <div className="label flick">resolving…</div>}
