@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { decodeEventLog, formatUnits } from "viem";
 import { useConnection, usePublicClient, useSignMessage, useWriteContract } from "wagmi";
 import { api, agentSessionMessage, type AgentAction, type DemoInfo } from "@/lib/api";
@@ -43,13 +43,13 @@ interface Run {
 export type Mode = "live" | "scripted";
 const sessionKey = (node: string) => `surety.agent.session.${node}`;
 
-const keyFor = (m: Mode) => `surety.demo.run.${m}`;
+const keyFor = (m: Mode, node?: string) => `surety.demo.run.${m}.${node ?? "-"}`;
 const pathFor = (m: Mode) => (m === "live" ? "/demo" : "/demo/scripted");
 const now = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
 
-function load(mode: Mode): Run {
+function load(mode: Mode, node?: string): Run {
   try {
-    return JSON.parse(sessionStorage.getItem(keyFor(mode)) ?? "") as Run;
+    return JSON.parse(sessionStorage.getItem(keyFor(mode, node)) ?? "") as Run;
   } catch {
     return { log: [] };
   }
@@ -62,7 +62,7 @@ function DemoInner({ mode }: { mode: Mode }) {
 
   const [run, setRun] = useState<Run>({ log: [] });
   const [busy, setBusy] = useState<string | null>(null);
-  const [node, setNode] = useState<string | undefined>();
+  const [picked, setPicked] = useState<string | null>(null);
   const [demo, setDemo] = useState<DemoInfo | null>(null);
   const health = useHealth();
   const deployments = useDeployments();
@@ -71,17 +71,31 @@ function DemoInner({ mode }: { mode: Mode }) {
   const client = usePublicClient();
   const [demoErr, setDemoErr] = useState<string | null>(null);
 
-  useEffect(() => setRun(load(mode)), [mode]);
   useEffect(() => {
     api
       .demo()
       .then((d) => {
         if (!d) return setDemoErr("no demo policy seeded on this network");
-        setNode(d.node);
         setDemo(d);
       })
       .catch((e) => setDemoErr((e as Error).message));
   }, []);
+
+  // Any wallet can run this with its *own* policy, as long as the hosted agent is its agent key.
+  const agentInfo = useQuery({ queryKey: ["agentInfo"], queryFn: api.agentInfo, retry: 0 });
+  const mine = useQuery({ queryKey: ["policies", address], queryFn: () => api.policies(address), enabled: !!address, retry: 0 });
+  const hosted = agentInfo.data?.address?.toLowerCase();
+  const own = (mine.data ?? []).filter((p) => hosted && p.policy.agent.toLowerCase() === hosted && p.policy.active);
+  const options: { node: string; label: string }[] = [
+    ...own.map((p) => ({ node: p.node, label: p.label ?? p.node.slice(0, 10) })),
+    ...(demo && !own.some((p) => p.node === demo.node) ? [{ node: demo.node as string, label: demo.label }] : []),
+  ];
+  const node = (picked && options.some((o) => o.node === picked) ? picked : options[0]?.node) ?? demo?.node;
+  const selectedLabel = options.find((o) => o.node === node)?.label ?? demo?.label;
+  const rules = useQuery({ queryKey: ["agentRules", node], queryFn: () => api.agentRules(node!), enabled: !!node, retry: 0 });
+  const merchant = rules.data?.allowlist[0] ?? demo?.merchant ?? "0x1111111111111111111111111111111111111111";
+
+  useEffect(() => setRun(load(mode, node)), [mode, node]);
 
   const policy = usePolicy(node);
   const feed = useFeed(node);
@@ -90,9 +104,9 @@ function DemoInner({ mode }: { mode: Mode }) {
   const save = useCallback((next: Run) => {
     setRun(next);
     try {
-      sessionStorage.setItem(keyFor(mode), JSON.stringify(next));
+      sessionStorage.setItem(keyFor(mode, node), JSON.stringify(next));
     } catch {}
-  }, [mode]);
+  }, [mode, node]);
   const push = (r: Run, ...lines: Omit<LogLine, "t">[]): Run => ({ ...r, log: [...r.log, ...lines.map((l) => ({ ...l, t: now() }))] });
   const refresh = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ["policy"] });
@@ -121,7 +135,7 @@ function DemoInner({ mode }: { mode: Mode }) {
     if (!node) return;
     try {
       const s = JSON.parse(sessionStorage.getItem(sessionKey(node)) ?? "null") as { token: string; expiresAt: number } | null;
-      if (s && s.expiresAt > Date.now() + 60_000) setToken(s.token);
+      setToken(s && s.expiresAt > Date.now() + 60_000 ? s.token : null);
     } catch {}
   }, [node]);
   const authorize = () =>
@@ -175,7 +189,7 @@ function DemoInner({ mode }: { mode: Mode }) {
   const liveNormal = () =>
     act("normal", async (r) => {
       if (!token) throw new Error("authorize the live agent first");
-      const m = demo?.merchant ?? "0x1111111111111111111111111111111111111111";
+      const m = merchant;
       const instruction = `Pay 1 USDC to ${m} for this morning's coffee, then swap 1 USDC into WETH for the treasury (counterparty ${m}).`;
       const r1 = push(r, { tone: "sig", text: `policyholder → agent: "${instruction}"` });
       save(r1);
@@ -299,7 +313,7 @@ function DemoInner({ mode }: { mode: Mode }) {
         } catch {}
         save(
           push(
-            load(mode),
+            load(mode, node),
             s.status === "approved"
               ? { tone: "ok", text: `World ID: same human, fresh proof ✓ · releasing payout from the reserve` }
               : { tone: "bad", text: `World ID ${s.status} (${s.reason ?? "—"}) · claim HELD, nothing paid`, tx: s.heldTx },
@@ -379,7 +393,7 @@ function DemoInner({ mode }: { mode: Mode }) {
         <section style={{ minWidth: 0 }}>
           <div className="term-feed-head">
             <span>
-              <Wordmark size={14} /> <span style={{ color: "var(--faint)" }}>/ {demo ? `${demo.label}.surety.eth` : "…"}</span>
+              <Wordmark size={14} /> <span style={{ color: "var(--faint)" }}>/ {selectedLabel ? `${selectedLabel}.surety.eth` : "…"}</span>
             </span>
             <span className="label">{policy.data ? "policy live" : demoErr ?? "loading…"}</span>
           </div>
@@ -400,6 +414,24 @@ function DemoInner({ mode }: { mode: Mode }) {
               </span>
             </div>
           )}
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 14 }}>
+            <span className="label">policy</span>
+            {options.map((o) => (
+              <button key={o.node} className={`filter-pill ${o.node === node ? "filter-on" : ""}`} disabled={!!busy} onClick={() => setPicked(o.node)}>
+                {o.label}.surety.eth
+              </button>
+            ))}
+            {address && mine.data && own.length === 0 && (
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                Your wallet has no policy run by the hosted agent —{" "}
+                <Link href="/insure?type=payments" className="link" style={{ textDecoration: "underline" }}>
+                  insure one
+                </Link>{" "}
+                to run this with your own.
+              </span>
+            )}
+          </div>
 
           <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
             {live ? (
@@ -442,7 +474,7 @@ function DemoInner({ mode }: { mode: Mode }) {
           <div className="console" style={{ minHeight: 260 }}>
             {run.log.length === 0 ? (
               <div className="c-dim">
-                $ surety replay --agent {demo ? `${demo.label}.surety.eth` : "…"}
+                $ surety replay --agent {selectedLabel ? `${selectedLabel}.surety.eth` : "…"}
                 <br />
                 {live
                   ? "live mode: a real LLM agent decides every action with a real key. the attack is an email to its public inbox — whether it falls for it is up to the model."

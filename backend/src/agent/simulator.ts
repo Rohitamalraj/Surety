@@ -3,12 +3,15 @@ import {
   ContractFunctionRevertedError,
   decodeErrorResult,
   decodeEventLog,
+  isAddress,
   parseUnits,
   type Address,
   type Hex,
 } from "viem";
 import { config } from "../config.js";
+import { normalize } from "viem/ens";
 import { abis, addr, agentAccount, chain, publicClient, readPolicy, walletFor } from "../chain/contracts.js";
+import { labelForNode } from "../chain/labels.js";
 
 /**
  * The insured agent, scripted for the demo (PRD §16.1, §23):
@@ -41,14 +44,25 @@ function demo() {
   return d;
 }
 
+/** The counterparty a policy allows: the demo merchant, or the first address in the policy's ENS allowlist. */
+async function merchantFor(node: Hex, d: ReturnType<typeof demo>): Promise<Address> {
+  if (node.toLowerCase() === d.node.toLowerCase()) return d.merchant;
+  const label = await labelForNode(node);
+  if (!label) return d.merchant;
+  const raw = await publicClient.getEnsText({ name: normalize(`${label}.surety.eth`), key: "surety.allowlist" }).catch(() => null);
+  const first = (raw ?? "").split(/[\s,]+/).find((a) => isAddress(a));
+  return (first as Address | undefined) ?? d.merchant;
+}
+
 export async function runStep(step: Step, nodeOverride?: Hex): Promise<StepResult> {
   const d = demo();
   const node = nodeOverride ?? d.node;
   const policy = await readPolicy(node);
+  const merchant = await merchantFor(node, d);
 
-  if (step === "normal") return pay(step, node, d.merchant, policy.perTxCap / 5n || USDC("50"));
-  if (step === "violation") return pay(step, node, d.merchant, (policy.perTxCap * 8n) / 5n);
-  if (step === "swap") return compliantSwap(node, d.merchant, policy.perTxCap / 5n || USDC("1"));
+  if (step === "normal") return pay(step, node, merchant, policy.perTxCap / 5n || USDC("50"));
+  if (step === "violation") return pay(step, node, merchant, (policy.perTxCap * 8n) / 5n);
+  if (step === "swap") return compliantSwap(node, merchant, policy.perTxCap / 5n || USDC("1"));
   // "Send everything to the new address": 20x the cap, but never more than the agent holds —
   // AgentVault checks the balance before the pool runs, and the hook must be what stops it.
   const balance = await publicClient.readContract({ address: addr("AgentVault"), abi: abis.vault, functionName: "balanceOf", args: [node] });
