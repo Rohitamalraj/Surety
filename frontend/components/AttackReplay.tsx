@@ -387,7 +387,7 @@ function DemoInner({ mode }: { mode: Mode }) {
 
           <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 16 }}>
             <LineArt shape="signal" className="h-full w-full" />
-            <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
+            <div className="label art-caption">
               enforce where you can · insure what gets through
             </div>
           </div>

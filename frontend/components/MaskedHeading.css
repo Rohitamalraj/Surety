@@ -61,3 +61,13 @@
   user-select: none;
   -webkit-user-drag: none;
 }
+
+/* Safety net (Surety): once the reveal has had time to finish, render the real text underneath in
+   --mh-fallback, so the heading stays readable even if the clipped image layer fails to paint. The
+   image fill sits exactly on top, so when everything works this layer is hidden behind it. */
+.masked-heading__measure {
+  animation: mh-fallback 0s linear var(--mh-fallback-delay, 2.2s) forwards;
+}
+@keyframes mh-fallback {
+  to { color: var(--mh-fallback, transparent); }
+}

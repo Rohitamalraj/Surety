@@ -65,7 +65,7 @@ export default function FeedPage() {
             </div>
             <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
               <LineArt shape="field" className="h-full w-full" />
-              <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
+              <div className="label art-caption">
                 payouts come only from the liquid reserve
               </div>
             </div>

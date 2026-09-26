@@ -48,7 +48,7 @@ export default function PolicyLookupPage() {
 
       <div style={{ position: "relative", height: 110, marginTop: 28, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden" }}>
         <LineArt shape="loop" className="h-full w-full" />
-        <div className="label" style={{ position: "absolute", bottom: 12, left: 16, right: 16, color: "var(--accent-ink)", opacity: 0.9 }}>
+        <div className="label art-caption">
           the rules are public · resolver looked up fresh on every read
         </div>
       </div>

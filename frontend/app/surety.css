@@ -173,3 +173,13 @@
 .ens-card .ens-link-title { font-size: 15px; font-weight: 500; color: var(--ink); }
 .ens-card .ens-link-sub { font-size: 13px; color: var(--muted); }
 .ens-card .ens-link:hover .ens-link-title { color: var(--signal); }
+
+/* Caption over line-art banners: a solid pill so the animated lines pass behind the text, not through it. */
+.art-caption {
+  position: absolute; left: 14px; bottom: 12px; z-index: 1;
+  max-width: calc(100% - 28px);
+  padding: 5px 12px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line);
+  color: var(--accent-ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}

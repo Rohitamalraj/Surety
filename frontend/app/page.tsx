@@ -124,7 +124,7 @@ export default function HomePage() {
               parallax={26}
               duration={1.1}
               stagger={0.09}
-              style={{ position: "relative", zIndex: 1, fontFamily: "var(--font-display), sans-serif" }}
+              style={{ position: "relative", zIndex: 1, fontFamily: "var(--font-display), sans-serif", ["--mh-fallback" as string]: "var(--ink)" } as React.CSSProperties}
             />
             </div>
 
