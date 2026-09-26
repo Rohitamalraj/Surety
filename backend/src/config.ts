@@ -105,6 +105,13 @@ export const config = {
 
   deployments,
 
+  /** The hosted payments agent's brain: Groq's OpenAI-compatible chat API with tool calling. */
+  groq: {
+    apiKey: optional("GROQ_API_KEY"),
+    model: optional("GROQ_MODEL", "llama-3.3-70b-versatile"),
+    baseUrl: optional("GROQ_BASE_URL", "https://api.groq.com/openai/v1"),
+  },
+
   /** How long a signed approval stays valid on-chain. */
   attestationTtlSec: 10 * 60,
   /** How long a World ID login attempt may take before it counts as expired. */

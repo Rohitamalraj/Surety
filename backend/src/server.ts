@@ -11,6 +11,7 @@ import { completeClaimCheck, fail } from "./worldid/verifyFreshCheck.js";
 import { startIndexer, syncNow } from "./indexer/watchEvents.js";
 import { data } from "./routes/data.js";
 import { idkit } from "./routes/idkit.js";
+import { paymentsAgent } from "./routes/paymentsAgent.js";
 import { describeError } from "./lib/errors.js";
 
 export const app = new Hono();
@@ -168,6 +169,7 @@ app.get("/api/deployments", (c) =>
 
 // Registered last so the World ID routes above answer first.
 app.route("/api/idkit", idkit);
+app.route("/api/payments-agent", paymentsAgent);
 app.route("/api", data);
 
 if (process.env.NODE_ENV !== "test") {

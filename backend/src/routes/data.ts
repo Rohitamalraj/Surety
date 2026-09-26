@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { decodeFunctionData, isAddress, isHex, toFunctionSelector, type Hex } from "viem";
-import { namehash } from "viem/ens";
+import { isAddress, isHex, type Hex } from "viem";
 import { config } from "../config.js";
+import { labelOf, labelForNode } from "../chain/labels.js";
 import {
   abis,
   addr,
@@ -75,8 +75,7 @@ data.get("/policy/:node", async (c) => {
       };
     }),
   );
-  const issuedEv = feed({ node, limit: 500 }).find((e) => e.type === "PolicyIssued");
-  const label = (issuedEv && (await labelOf(issuedEv.txHash, node))) ?? (config.deployments.demo?.node === node ? config.deployments.demo.label : undefined);
+  const label = await labelForNode(node);
   return c.json({
     node,
     label,
@@ -86,30 +85,6 @@ data.get("/policy/:node", async (c) => {
     events: feed({ node, limit: 200 }),
   });
 });
-
-/**
- * `issuePolicy` doesn't emit the label, so read it from the purchase tx's calldata (cached; never
- * changes). Smart accounts (e.g. MetaMask's EIP-7702 delegation) wrap the call, so look for the
- * embedded `issuePolicy` selector anywhere in the input, not just at the start.
- */
-const ISSUE_SELECTOR = toFunctionSelector("issuePolicy((string,address,address,uint256,uint256,address[],uint8),bytes32,uint64,bytes)").slice(2);
-const labels = new Map<string, string | null>();
-async function labelOf(txHash: Hex, node: Hex): Promise<string | null> {
-  if (labels.has(txHash)) return labels.get(txHash)!;
-  let label: string | null = null;
-  try {
-    const input = (await publicClient.getTransaction({ hash: txHash })).input.slice(2);
-    for (let i = input.indexOf(ISSUE_SELECTOR); i !== -1 && label === null; i = input.indexOf(ISSUE_SELECTOR, i + 1)) {
-      if (i % 2 !== 0) continue;
-      try {
-        const call = decodeFunctionData({ abi: abis.registry, data: `0x${input.slice(i)}` });
-        if (call.functionName === "issuePolicy" && namehash(`${call.args[0].label}.surety.eth`) === node.toLowerCase()) label = call.args[0].label;
-      } catch {}
-    }
-  } catch {}
-  labels.set(txHash, label);
-  return label;
-}
 
 /** Every issued policy, newest first — or only `holder`'s (the dashboard). Live on-chain state per policy. */
 data.get("/policies", async (c) => {
