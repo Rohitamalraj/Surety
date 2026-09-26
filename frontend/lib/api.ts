@@ -126,7 +126,8 @@ export interface IdkitConfig {
 // ---------------------------------------------------------------- calls
 
 export const api = {
-  health: () => req<{ ok: boolean; network: string; chainId: number; block: string | null; worldId: string }>("/health"),
+  health: () =>
+    req<{ ok: boolean; network: string; chainId: number; block: string | null; worldId: string; publicUrl?: string }>("/health"),
   deployments: () => req<Deployments>("/api/deployments"),
   feed: (node?: string, limit = 60) => req<FeedEvent[]>(`/api/feed?limit=${limit}${node ? `&node=${node}` : ""}`),
   solvency: () => req<Solvency>("/api/solvency"),

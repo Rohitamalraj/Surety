@@ -13,6 +13,7 @@ import { SolvencyBar } from "@/components/SolvencyBar";
 import { EventRow } from "@/components/EventRow";
 import { Pill } from "@/components/ui";
 import { Wordmark } from "@/components/Wordmark";
+import { TunnelHint } from "@/components/TunnelHint";
 
 /**
  * Attack Replay — the on-stage page (PRD §23). The scripted agent runs against the real contracts:
@@ -250,6 +251,12 @@ function DemoInner() {
               enforce where you can · insure what gets through
             </div>
           </div>
+
+          {health.data?.worldId === "configured" && (
+            <div style={{ marginBottom: 12 }}>
+              <TunnelHint />
+            </div>
+          )}
 
           {health.data?.worldId === "configured" && health.data.network === "local" && demo && (
             <div className="notice" style={{ marginBottom: 16, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>

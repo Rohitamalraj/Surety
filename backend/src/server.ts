@@ -26,6 +26,21 @@ const DEV_SUB = "local-demo-sub"; // keccak256 matches the devnet policy's subHa
 app.use("/api/*", cors({ origin: config.frontendUrl }));
 app.use("/health", cors({ origin: config.frontendUrl }));
 
+/**
+ * Landing for the public tunnel URL. On ngrok's free plan the browser must click through ngrok's
+ * "You are about to visit" page once; this confirms the tunnel works and sets that cookie before the
+ * World ID redirect needs it.
+ */
+app.get("/", (c) =>
+  c.html(`<!doctype html><meta charset="utf-8"><title>Surety backend</title>
+<style>body{font:15px system-ui;background:#f7f9fd;color:#1a2233;display:grid;place-items:center;min-height:100vh;margin:0}
+main{max-width:460px;padding:28px;border:1px solid #d9e1f0;border-radius:14px;background:#fff}
+b{color:#2f6bff}a{color:#2f6bff}</style>
+<main><h2>✓ Surety backend is reachable</h2>
+<p>The tunnel works. World ID can now redirect back here after you verify.</p>
+<p>You can close this tab and return to <a href="${config.frontendUrl}/demo">the demo</a>.</p></main>`),
+);
+
 app.get("/health", async (c) => {
   let block: string | null = null;
   try {
@@ -35,6 +50,7 @@ app.get("/health", async (c) => {
     ok: true,
     network: config.network,
     chainId: config.chain.chainId,
+    publicUrl: config.publicUrl,
     block,
     worldId: useDevIdp ? "dev-mock" : config.worldId.clientId ? "configured" : "missing",
   });

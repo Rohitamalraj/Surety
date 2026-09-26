@@ -17,6 +17,7 @@ import { HumanCheck } from "@/components/HumanCheck";
 import { PricingBreakdown } from "@/components/PricingBreakdown";
 import { PoweredBy } from "@/components/PoweredBy";
 import { TxLink } from "@/components/ui";
+import { TunnelHint } from "@/components/TunnelHint";
 
 interface Form {
   label: string;
@@ -258,6 +259,9 @@ function CreateInner() {
                   <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 8, maxWidth: "58ch" }}>
                     Binds this policy to you. At claim time, only a fresh World ID check by this same person can release a payout.
                   </p>
+                  <div style={{ marginTop: 10 }}>
+                    <TunnelHint />
+                  </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                     {enrollValid ? (
                       <span className="pill pill-gain">
