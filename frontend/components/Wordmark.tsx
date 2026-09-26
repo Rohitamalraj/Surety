@@ -1,4 +1,4 @@
-/** Surety wordmark: a blue shield tile with a check, then the name in the display face. */
+/** Surety wordmark: an accent shield tile with a check, then the name in the display face. */
 export function Wordmark({ size = 20 }: { size?: number; caret?: boolean }) {
   return (
     <span

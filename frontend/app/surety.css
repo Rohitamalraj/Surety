@@ -98,7 +98,7 @@
   background: repeating-linear-gradient(0deg, transparent 0 2px, oklch(1 0 0 / 0.04) 2px 3px);
 }
 .console .c-dim { color: color-mix(in oklch, var(--dark-ink) 50%, transparent); }
-.console .c-ok { color: oklch(0.78 0.13 245); }
+.console .c-ok { color: oklch(0.88 0 0); }
 .console .c-bad { color: oklch(0.72 0.17 26); }
 .console .c-sig { color: var(--signal); }
 .console a { text-decoration: underline; text-underline-offset: 2px; }

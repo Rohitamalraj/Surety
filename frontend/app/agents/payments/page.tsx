@@ -231,7 +231,7 @@ function Console({ policy, address }: { policy: PolicySummary; address: string }
                     whiteSpace: "pre-wrap",
                     wordBreak: "break-word",
                     background: t.role === "user" ? "var(--signal)" : "var(--tint)",
-                    color: t.role === "user" ? "#fff" : "var(--ink)",
+                    color: t.role === "user" ? "var(--surface)" : "var(--ink)",
                   }}
                 >
                   {t.content}

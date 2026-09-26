@@ -1,20 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">
-  <!-- Light theme: charcoal-to-graphite fill with fine silver lines, so the heading reads as ink on paper. -->
+  <!-- Dark theme: silver-to-white fill with fine graphite lines, so the heading reads light on black. -->
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0d0d0d"/>
-      <stop offset="0.5" stop-color="#2b2b2b"/>
-      <stop offset="0.8" stop-color="#474747"/>
-      <stop offset="1" stop-color="#5e5e5e"/>
+      <stop offset="0" stop-color="#8c8c8c"/>
+      <stop offset="0.45" stop-color="#c9c9c9"/>
+      <stop offset="0.75" stop-color="#e6e6e6"/>
+      <stop offset="1" stop-color="#ffffff"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.72" cy="0.35" r="0.55">
-      <stop offset="0" stop-color="#8a8a8a" stop-opacity="0.7"/>
-      <stop offset="1" stop-color="#8a8a8a" stop-opacity="0"/>
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="1600" height="900" fill="url(#g)"/>
   <rect width="1600" height="900" fill="url(#glow)"/>
-  <g fill="none" stroke="#d9d9d9" stroke-opacity="0.28" stroke-width="2">
+  <g fill="none" stroke="#3a3a3a" stroke-opacity="0.3" stroke-width="2">
     <path d="M-50 120 C 300 40, 520 260, 820 180 S 1300 60, 1650 200"/>
     <path d="M-50 200 C 280 120, 540 330, 840 250 S 1320 130, 1650 280"/>
     <path d="M-50 280 C 260 200, 560 400, 860 320 S 1340 200, 1650 360"/>
@@ -25,7 +25,7 @@
     <path d="M-50 680 C 160 600, 660 750, 960 670 S 1440 550, 1650 760"/>
     <path d="M-50 760 C 140 680, 680 820, 980 740 S 1460 620, 1650 840"/>
   </g>
-  <g fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1">
+  <g fill="none" stroke="#1a1a1a" stroke-opacity="0.16" stroke-width="1">
     <circle cx="1150" cy="320" r="140"/>
     <circle cx="1150" cy="320" r="190"/>
     <circle cx="1150" cy="320" r="250"/>

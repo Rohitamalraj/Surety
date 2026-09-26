@@ -1,52 +1,51 @@
 @import "tailwindcss";
 
-/* Surety design system — "clearing house": cool paper, blueprint grid, ink type,
-   one insurance-blue accent. Red is reserved for losses, holds and violations;
-   blue carries verified / paid / within-policy. */
+/* Surety design system — "clearing house": neutral paper, fine grid, ink type, a monochrome
+   black/grey accent. Red is the only hue, reserved for losses, holds and violations. */
 :root {
-  --bg: oklch(0.982 0.004 255);
-  --bg-2: oklch(0.962 0.008 255);
-  --surface: oklch(0.997 0.002 255);
-  --surface-2: oklch(0.945 0.01 255);
-  --line: oklch(0.89 0.012 255);
-  --line-strong: oklch(0.76 0.02 255);
-  --ink: oklch(0.21 0.03 262);
-  --muted: oklch(0.47 0.025 262);
-  --faint: oklch(0.63 0.02 262);
+  --bg: oklch(0.975 0 0);
+  --bg-2: oklch(0.955 0 0);
+  --surface: oklch(0.995 0 0);
+  --surface-2: oklch(0.94 0 0);
+  --line: oklch(0.885 0 0);
+  --line-strong: oklch(0.74 0 0);
+  --ink: oklch(0.18 0 0);
+  --muted: oklch(0.44 0 0);
+  --faint: oklch(0.6 0 0);
   --loss: oklch(0.55 0.2 25);
-  --gain: oklch(0.52 0.19 258); /* verified / paid — blue */
-  --signal: oklch(0.6 0.2 258); /* insurance blue — the one accent */
-  --signal-soft: oklch(0.93 0.04 255);
-  --tint: oklch(0.955 0.025 255); /* light blue panels for illustrations */
-  --accent-ink: oklch(0.38 0.14 260);
-  --dark: oklch(0.2 0.05 262); /* navy, for the console */
-  --dark-ink: oklch(0.96 0.01 255);
+  --gain: oklch(0.3 0 0); /* verified / paid — near-black */
+  --signal: oklch(0.2 0 0); /* the one accent: black */
+  --signal-soft: oklch(0.92 0 0);
+  --tint: oklch(0.945 0 0); /* light grey panels for illustrations */
+  --accent-ink: oklch(0.36 0 0);
+  --dark: oklch(0.17 0 0); /* charcoal, for the console */
+  --dark-ink: oklch(0.96 0 0);
   --radius: 10px;
-  --grid: oklch(0.52 0.12 258 / 0.06);
+  --grid: oklch(0.2 0 0 / 0.05);
 }
 
-/* Dark theme — deep navy paper, the same single blue accent. Toggled from the header
+/* Dark theme — black/graphite paper with a light-grey accent. Toggled from the header
    (data-theme on <html>, persisted; defaults to the system preference). */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: oklch(0.165 0.022 262);
-  --bg-2: oklch(0.2 0.026 262);
-  --surface: oklch(0.205 0.026 262);
-  --surface-2: oklch(0.245 0.03 262);
-  --line: oklch(0.31 0.03 262);
-  --line-strong: oklch(0.43 0.035 262);
-  --ink: oklch(0.95 0.01 255);
-  --muted: oklch(0.75 0.02 258);
-  --faint: oklch(0.6 0.025 258);
+  --bg: oklch(0.15 0 0);
+  --bg-2: oklch(0.18 0 0);
+  --surface: oklch(0.195 0 0);
+  --surface-2: oklch(0.235 0 0);
+  --line: oklch(0.3 0 0);
+  --line-strong: oklch(0.43 0 0);
+  --ink: oklch(0.95 0 0);
+  --muted: oklch(0.76 0 0);
+  --faint: oklch(0.6 0 0);
   --loss: oklch(0.69 0.17 25);
-  --gain: oklch(0.73 0.14 255);
-  --signal: oklch(0.68 0.18 258);
-  --signal-soft: oklch(0.3 0.08 258);
-  --tint: oklch(0.215 0.04 260);
-  --accent-ink: oklch(0.83 0.1 255);
-  --dark: oklch(0.12 0.03 262);
-  --dark-ink: oklch(0.95 0.01 255);
-  --grid: oklch(0.72 0.12 258 / 0.06);
+  --gain: oklch(0.88 0 0);
+  --signal: oklch(0.9 0 0); /* the one accent: light grey */
+  --signal-soft: oklch(0.28 0 0);
+  --tint: oklch(0.205 0 0);
+  --accent-ink: oklch(0.8 0 0);
+  --dark: oklch(0.11 0 0);
+  --dark-ink: oklch(0.95 0 0);
+  --grid: oklch(0.9 0 0 / 0.05);
 }
 :root { color-scheme: light; }
 html { transition: background-color 0.25s var(--ease-out-quart, ease); }
@@ -105,7 +104,7 @@ div.label:first-child::before, .eyebrow::before {
 }
 .tnum { font-variant-numeric: tabular-nums; }
 .pixel { font-family: var(--font-display), sans-serif; font-weight: 700; letter-spacing: -0.02em; }
-/* wordmark: a blue shield-mark + lowercase name */
+/* wordmark: an accent shield-mark + the name */
 .sure {
   display: inline-grid; place-items: center;
   width: 1.15em; height: 1.15em; margin-right: 0.28em;

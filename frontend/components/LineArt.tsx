@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { useTheme } from "@/lib/theme";
 
 /**
- * Surety's illustration engine: animated contour / signal line art, stroked in the accent blue.
+ * Surety's illustration engine: animated contour / signal line art, stroked in the accent colour.
  * Each scene is a small story from the product:
  *   arrows (enforce) — flow lines hit the hook's barrier and are turned away
  *   signal (record)  — scattered lines converge into a lens: the violation, recomputed
@@ -40,7 +40,7 @@ export function LineArt({ shape, className }: { shape: LineShape; className?: st
       ctx.strokeStyle = v;
       return ctx.strokeStyle === fallback.toLowerCase() ? fallback : v;
     };
-    const blue = pick("--signal", "#2f6bff");
+    const blue = pick("--signal", "#262626");
     const red = pick("--loss", "#d64545");
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 

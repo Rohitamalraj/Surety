@@ -89,9 +89,9 @@ export default function HomePage() {
                 }}
               >
                 <MoltenMetal
-                  color1={dark ? "#0b1f5c" : "#bfdbfe"}
-                  color2={dark ? "#2563eb" : "#60a5fa"}
-                  color3={dark ? "#93c5fd" : "#1d4ed8"}
+                  color1={dark ? "#1c1c1c" : "#d6d6d6"}
+                  color2={dark ? "#7a7a7a" : "#8f8f8f"}
+                  color3={dark ? "#ececec" : "#262626"}
                   speed={0.35}
                   scale={4}
                   detail={3}
@@ -105,13 +105,13 @@ export default function HomePage() {
                   grain
                   grainIntensity={0.05}
                   mouseInteraction={false}
-                  opacity={dark ? 0.95 : 0.7}
+                  opacity={dark ? 0.6 : 0.55}
                 />
               </div>
             <MaskedHeading
               tag="h1"
               text={HERO.heading}
-              src="/hero-fill.svg"
+              src={dark ? "/hero-fill-dark.svg" : "/hero-fill.svg"}
               reveal="rise"
               trigger="mount"
               align="left"
@@ -199,9 +199,9 @@ export default function HomePage() {
               diffuse={1.1}
               mapSamples={20000}
               mapBrightness={dark ? 6 : 3.2}
-              baseColor={dark ? "#27365f" : "#c7d7ff"}
-              markerColor={dark ? "#7aa2ff" : "#2f6bff"}
-              glowColor={dark ? "#1f2d57" : "#dbe6ff"}
+              baseColor={dark ? "#3a3a3a" : "#d4d4d4"}
+              markerColor={dark ? "#d4d4d4" : "#404040"}
+              glowColor={dark ? "#262626" : "#ebebeb"}
               markers={NO_MARKERS}
               enableZoom={false}
               autoRotateSpeed={0.0035}
