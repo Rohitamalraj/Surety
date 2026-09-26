@@ -183,3 +183,67 @@
   color: var(--accent-ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ---- pitch deck (/pitch) ---- */
+.pitch-deck {
+  position: relative; display: flex; flex-direction: column;
+  min-height: calc(100vh - 66px); background: var(--bg);
+  padding: clamp(24px, 4vw, 56px) clamp(20px, 6vw, 96px) 90px;
+}
+.pitch-deck:fullscreen { min-height: 100vh; padding-top: 56px; overflow: auto; }
+.pitch-slide { flex: 1; display: flex; flex-direction: column; max-width: 1240px; width: 100%; margin: 0 auto; animation: pitch-in .45s var(--ease-out-quart, ease) both; }
+@keyframes pitch-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .pitch-slide { animation: none; } }
+.pitch-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; font-size: 12px; color: var(--muted); }
+.pitch-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.pitch-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+.pitch-hero { font-size: clamp(64px, 12vw, 176px); line-height: 0.9; margin: 18px 0 10px; letter-spacing: 0.01em; display: inline-flex; align-items: center; }
+.pitch-hero .sure { font-size: 0.55em; }
+.pitch-lede { font-family: var(--font-display), sans-serif; font-size: clamp(20px, 2.4vw, 32px); font-weight: 600; max-width: 32ch; margin: 6px auto 0; }
+.pitch-sub { color: var(--muted); font-size: clamp(14px, 1.2vw, 17px); max-width: 60ch; margin: 14px auto 0; line-height: 1.6; }
+.pitch-trio { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 40px; }
+.pitch-trio > div { display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: 14px; }
+.pitch-h2 { font-size: clamp(30px, 4.2vw, 60px); line-height: 1.02; max-width: 22ch; margin-bottom: 28px; }
+.pitch-card { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.pitch-card h3 { font-size: 20px; line-height: 1.15; }
+.pitch-card p { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0; }
+.pitch-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; text-align: left; }
+.pitch-big { font-family: var(--font-display), sans-serif; font-weight: 800; font-size: clamp(30px, 3.4vw, 46px); line-height: 1; }
+.pitch-k { font-family: var(--font-display), sans-serif; font-weight: 600; font-size: 15px; }
+.pitch-src { margin-top: auto; font-family: var(--font-mono), monospace; font-size: 11px; color: var(--faint); letter-spacing: 0.04em; }
+.pitch-needed { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 12px; margin-top: 10px; }
+.pitch-needed > div { display: flex; gap: 14px; align-items: flex-start; padding: 14px 16px; border: 1px dashed var(--line-strong); border-radius: var(--radius); font-size: 15px; line-height: 1.45; }
+.pitch-num { display: inline-grid; place-items: center; min-width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--ink); font-size: 12px; flex-shrink: 0; }
+.pitch-three { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px; }
+.pitch-quote { margin-top: 26px; padding-left: 18px; border-left: 2px solid var(--ink); font-size: clamp(16px, 1.5vw, 20px); max-width: 70ch; color: var(--muted); line-height: 1.5; }
+.pitch-flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 12px; }
+.pitch-step { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 16px; position: relative; }
+.pitch-step p { color: var(--muted); font-size: 13.5px; line-height: 1.5; margin: 10px 0 0; }
+.pitch-step-head { display: flex; align-items: center; gap: 10px; font-size: 18px; flex-wrap: wrap; }
+.pitch-step-head .label { margin-left: auto; }
+.pitch-compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 12px; margin-top: 18px; }
+.pitch-compare > div { padding: 14px 16px; border-radius: var(--radius); background: var(--surface-2); }
+.pitch-compare code { display: block; margin-top: 6px; font-size: 13px; line-height: 1.55; color: var(--ink); white-space: normal; }
+.pitch-compare > div:first-child code { color: var(--loss); }
+.pitch-arch { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.25fr) auto minmax(0, 1fr); gap: 14px; align-items: stretch; }
+.pitch-col { display: flex; flex-direction: column; gap: 10px; }
+.pitch-arrow { align-self: center; font-size: 28px; color: var(--faint); }
+.pitch-box { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.pitch-box > span { color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.pitch-box-strong { border-color: var(--ink); }
+@media (max-width: 900px) { .pitch-arch { grid-template-columns: 1fr; } .pitch-arrow { transform: rotate(90deg); justify-self: center; } }
+.pitch-invariants { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.pitch-invariants span { font-family: var(--font-mono), monospace; font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); }
+.pitch-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.pitch-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.pitch-table th { text-align: left; font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.pitch-table td { padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+.pitch-table td:first-child { color: var(--ink); font-weight: 500; }
+.pitch-table tr:last-child td { border-bottom: 0; }
+.pitch-row-us td { color: var(--ink) !important; font-weight: 700; background: var(--surface-2); }
+.pitch-controls { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.pitch-dots { display: flex; gap: 8px; }
+.pitch-dots button { width: 9px; height: 9px; border-radius: 999px; border: 1px solid var(--ink); background: transparent; cursor: pointer; padding: 0; transition: background .2s, width .2s; }
+.pitch-dots button.on { background: var(--ink); width: 24px; }
+.pitch-hint { font-size: 10.5px; }
+@media (max-width: 640px) { .pitch-hint { display: none; } }

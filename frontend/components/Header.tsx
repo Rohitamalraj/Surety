@@ -17,6 +17,7 @@ const NAV: [string, string][] = [
   ["/feed", "Feed"],
   ["/demo", "Live attack"],
   ["/demo/scripted", "Scripted replay"],
+  ["/pitch", "Pitch"],
 ];
 
 /** The nav entry for this path: the longest href that is the path or a parent of it. */
