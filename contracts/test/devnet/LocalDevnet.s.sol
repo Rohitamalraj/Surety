@@ -56,6 +56,12 @@ contract LocalDevnet is Script {
         _deploy();
         _seed();
         vm.stopBroadcast();
+
+        // The seeded policyholder counts as an IDKit-verified unique human (as it would on Sepolia),
+        // so it can enroll with a real World ID for Agents session. Only the backend signer may do this.
+        vm.startBroadcast(SIGNER_PK);
+        gate.registerHuman(vm.addr(POLICYHOLDER_PK), uint256(keccak256("local-demo-human")));
+        vm.stopBroadcast();
         _write();
     }
 

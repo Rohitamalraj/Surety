@@ -4,8 +4,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useFeed, usePolicy } from "@/lib/hooks";
+import { api, worldIdStartUrl, type DemoInfo } from "@/lib/api";
+import { useFeed, useHealth, usePolicy } from "@/lib/hooks";
 import { short, txUrl, usdc } from "@/lib/format";
 import { LineArt } from "@/components/LineArt";
 import { ClaimFlow } from "@/components/ClaimFlow";
@@ -54,13 +54,21 @@ function DemoInner() {
   const [run, setRun] = useState<Run>({ log: [] });
   const [busy, setBusy] = useState<string | null>(null);
   const [node, setNode] = useState<string | undefined>();
+  const [demo, setDemo] = useState<DemoInfo | null>(null);
+  const [bindMsg, setBindMsg] = useState<string | null>(null);
+  const health = useHealth();
+  const bindFlow = params.get("bind") === "1";
   const [demoErr, setDemoErr] = useState<string | null>(null);
 
   useEffect(() => setRun(load()), []);
   useEffect(() => {
     api
       .demo()
-      .then((d) => (d ? setNode(d.node) : setDemoErr("no demo policy seeded on this network")))
+      .then((d) => {
+        if (!d) return setDemoErr("no demo policy seeded on this network");
+        setNode(d.node);
+        setDemo(d);
+      })
       .catch((e) => setDemoErr((e as Error).message));
   }, []);
 
@@ -151,7 +159,7 @@ function DemoInner() {
     api
       .session(wid)
       .then((s) => {
-        if (s.status === "pending") return;
+        if (s.status === "pending" || s.purpose !== "claim") return;
         try {
           sessionStorage.setItem(seenKey, "1");
         } catch {}
@@ -166,6 +174,27 @@ function DemoInner() {
       })
       .catch(() => {});
   }, [wid, run.claimId, save]);
+
+  useEffect(() => {
+    if (!bindFlow || !wid) return;
+    const key = `surety.demo.bind.${wid}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {}
+    setBindMsg("linking the demo policy to your World ID…");
+    api
+      .session(wid)
+      .then((s) => {
+        if (s.status !== "approved") throw new Error(`World ID ${s.status}${s.reason ? ` · ${s.reason}` : ""}`);
+        return api.demoBindHuman(wid);
+      })
+      .then(() => {
+        setBindMsg("linked ✓ the demo policy now belongs to your World ID — claims will ask for you");
+        window.history.replaceState(null, "", "/demo");
+      })
+      .catch((e) => setBindMsg(`could not link: ${(e as Error).message}`));
+  }, [bindFlow, wid]);
 
   const reset = () => {
     save({ log: [] });
@@ -221,6 +250,19 @@ function DemoInner() {
               enforce where you can · insure what gets through
             </div>
           </div>
+
+          {health.data?.worldId === "configured" && health.data.network === "local" && demo && (
+            <div className="notice" style={{ marginBottom: 16, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+              <span>
+                {bindMsg ?? "Real World ID is on. Link the demo policy to your World ID once, so the claim check asks for you."}
+              </span>
+              {!bindMsg?.startsWith("linked") && (
+                <a className="btn btn-primary" href={worldIdStartUrl({ purpose: "enroll", address: demo.policyholder, returnTo: "/demo?bind=1" })}>
+                  ◎ Link my World ID
+                </a>
+              )}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
             {steps.slice(0, 4).map((s) => (

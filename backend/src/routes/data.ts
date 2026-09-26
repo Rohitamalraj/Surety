@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { decodeEventLog, isHex, type Hex } from "viem";
+import { decodeEventLog, isHex, parseAbi, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { config } from "../config.js";
 import {
@@ -19,6 +19,8 @@ import { claimIdsFor, feed, indexerStatus, paymentEvents, syncNow } from "../ind
 import { runStep, type Step } from "../agent/simulator.js";
 import { jsonSafe } from "../lib/json.js";
 import { describeError } from "../lib/errors.js";
+import { getSession } from "../worldid/sessions.js";
+import { signerAccount } from "../worldid/signer.js";
 
 /** Read APIs for the frontend (PRD §16.2) plus the demo console's agent controls. */
 export const data = new Hono();
@@ -143,6 +145,43 @@ data.post("/demo/file-claim", async (c) => {
     }
     await syncNow();
     return c.json({ txHash, claimId });
+  } catch (err) {
+    return c.json({ error: describeError(err) }, 500);
+  }
+});
+
+/**
+ * Local devnet only: bind the seeded demo policy to a real World ID for Agents identity.
+ * The devnet seeds the policy with a placeholder subHash; after the user completes a real enrollment
+ * (validated server-side like any other), this copies that session's subHash onto the demo policy so
+ * the claim-time fresh check matches the same real human. Never available on Sepolia.
+ */
+const devRegistryAbi = parseAbi([
+  "function setPolicy(bytes32 node, (address policyholder,address agent,address payoutAddr,uint256 coverageLimit,uint256 perTxCap,uint8 tier,uint32 streak,uint32 claimsCount,bytes32 subHash,uint256 paidOut,uint64 issuedAt,bool active) p)",
+]);
+
+data.post("/demo/bind-human", async (c) => {
+  if (config.network !== "local") return c.json({ error: "only available on the local devnet" }, 404);
+  const { session } = await c.req.json<{ session?: string }>().catch(() => ({}) as { session?: string });
+  const s = session ? getSession(session) : undefined;
+  if (!s || s.purpose !== "enroll") return c.json({ error: "no enrollment session" }, 400);
+  if (s.status !== "approved" || !s.result.subHash) return c.json({ error: `World ID session is ${s.status}` }, 409);
+  const node = config.deployments.demo?.node;
+  if (!node) return c.json({ error: "no demo policy seeded" }, 404);
+
+  try {
+    const policy = await readPolicy(node);
+    const w = walletFor(signerAccount());
+    const txHash = await w.writeContract({
+      account: w.account!,
+      chain,
+      address: addr("PolicyRegistry"),
+      abi: devRegistryAbi,
+      functionName: "setPolicy",
+      args: [node, { ...policy, subHash: s.result.subHash }],
+    });
+    await publicClient.waitForTransactionReceipt({ hash: txHash });
+    return c.json({ bound: true, txHash, subHash: s.result.subHash });
   } catch (err) {
     return c.json({ error: describeError(err) }, 500);
   }

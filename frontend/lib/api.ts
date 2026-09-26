@@ -135,6 +135,7 @@ export const api = {
   demo: () => req<DemoInfo | null>("/api/demo"),
   agentStep: (step: "normal" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),
   demoFileClaim: (paymentId: string, node?: string) => post<{ txHash: Hex; claimId: string }>("/api/demo/file-claim", { paymentId, node }),
+  demoBindHuman: (session: string) => post<{ bound: boolean; txHash: Hex }>("/api/demo/bind-human", { session }),
   session: (id: string) => req<WorldIdSession>(`/api/worldid/session/${id}`),
   executeClaim: (claimId: string, session: string) => post<{ txHash: Hex }>(`/api/claims/${claimId}/execute`, { session }),
 
