@@ -172,7 +172,7 @@ function FundAgent({ node }: { node: `0x${string}` }) {
   const d = useDeployments();
   const client = usePublicClient();
   const write = useWriteContract();
-  const [amount, setAmount] = useState("1000");
+  const [amount, setAmount] = useState("50");
   const [balance, setBalance] = useState<bigint | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const vault = d.data?.AgentVault;

@@ -28,7 +28,7 @@ interface Form {
   allowlist: string;
   tier: 0 | 1 | 2;
 }
-const EMPTY: Form = { label: "", agent: "", payout: "", coverage: "10000", cap: "500", allowlist: "", tier: 2 };
+const EMPTY: Form = { label: "", agent: "", payout: "", coverage: "100", cap: "5", allowlist: "", tier: 2 };
 const FORM_KEY = "surety.create.form";
 const enrollKey = (a: string) => `surety.enroll.${a.toLowerCase()}`;
 
