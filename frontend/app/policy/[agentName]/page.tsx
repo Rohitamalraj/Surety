@@ -254,7 +254,7 @@ function EnsCard({ name }: { name?: string }) {
   }, [client, name]);
 
   return (
-    <div className="side-card">
+    <div className="side-card ens-card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
         <span className="label">{"ens records"}</span>
         <PoweredBy sponsor="ens" label={null} />
@@ -269,11 +269,11 @@ function EnsCard({ name }: { name?: string }) {
       {records &&
         RECORD_KEYS.map((k) => (
           <div key={k} className="kv">
-            <span>{k.replace("surety.", "")}</span>
+            <span>{k}</span>
             <span className="tnum">
               {!records[k]
                 ? "—"
-                : ["surety.coverageLimit", "surety.perTxCap", "surety.premium"].includes(k) && /^d+$/.test(records[k])
+                : ["surety.coverageLimit", "surety.perTxCap", "surety.premium"].includes(k) && /^\d+$/.test(records[k])
                   ? `${usdc(records[k])} USDC`
                   : records[k]}
             </span>

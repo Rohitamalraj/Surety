@@ -285,7 +285,7 @@ function Console({ policy, address }: { policy: PolicySummary; address: string }
       </section>
 
       <aside style={{ minWidth: 0 }}>
-        <div className="sticky-side side-card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+        <div className="sticky-side side-card ens-card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
           <div className="label">published rules · read live</div>
           {rules.data ? (
             <>
@@ -300,7 +300,7 @@ function Console({ policy, address }: { policy: PolicySummary; address: string }
                 </div>
                 {rules.data.allowlist.length === 0 && <div style={{ fontSize: 12, color: "var(--muted)" }}>none published</div>}
                 {rules.data.allowlist.map((a) => (
-                  <div key={a} className="tnum" style={{ fontSize: 12 }}>
+                  <div key={a} className="tnum" style={{ fontSize: 14 }}>
                     {short(a, 10, 8)}
                   </div>
                 ))}
@@ -309,7 +309,7 @@ function Console({ policy, address }: { policy: PolicySummary; address: string }
           ) : (
             <div className="label flick">reading ENS…</div>
           )}
-          <p style={{ fontSize: 12, color: "var(--faint)", marginTop: 6 }}>
+          <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 6, lineHeight: 1.55 }}>
             Payments aren&apos;t blocked: AgentVault records every one, and the ViolationOracle flags any that break these
             rules. Those are the ones you can claim.
           </p>
@@ -367,7 +367,7 @@ function ActionCard({ a, policyHref }: { a: AgentAction; policyHref: string }) {
 }
 
 const Row = ({ k, v }: { k: string; v: string }) => (
-  <span className="tnum" style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 13, borderBottom: "1px solid var(--line)", padding: "4px 0" }}>
+  <span className="tnum" style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 14, borderBottom: "1px solid var(--line)", padding: "7px 0", alignItems: "baseline" }}>
     <span className="label">{k}</span>
     <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{v}</span>
   </span>

@@ -160,3 +160,15 @@
   padding: 14px 16px;
 }
 .stat-v { font-family: var(--font-display), sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+/* ---- ENS cards (records + verify): larger, higher-contrast type than the default mono labels ---- */
+.ens-card .label { font-size: 12px; letter-spacing: 0.1em; color: var(--muted); }
+.ens-card .kv { font-size: 14px; padding: 10px 0; align-items: baseline; }
+.ens-card .kv > span:first-child { font-family: var(--font-mono), monospace; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--muted); }
+.ens-card .kv > span:last-child { font-size: 14px; font-weight: 500; }
+.ens-card .ens-name { font-size: 20px; font-weight: 600; }
+.ens-card .ens-meta { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 14px; align-items: baseline; }
+.ens-card .ens-link { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.ens-card .ens-link-title { font-size: 15px; font-weight: 500; color: var(--ink); }
+.ens-card .ens-link-sub { font-size: 13px; color: var(--muted); }
+.ens-card .ens-link:hover .ens-link-title { color: var(--signal); }

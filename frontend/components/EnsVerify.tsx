@@ -37,13 +37,13 @@ export function EnsVerify({ label, resolver: known, lookup = true }: { label: st
   if (lookup) links.push({ href: `/policy/${label}`, text: "Surety lookup", sub: "public policy page", internal: true });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div className="ens-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div className="label">verify on ENS</div>
-      <div className="tnum" style={{ fontSize: 15, display: "flex", flexWrap: "wrap", alignItems: "baseline", gap: 0 }}>
-        <span style={{ color: "var(--signal)", fontWeight: 600 }}>{label}</span>
-        <span style={{ color: "var(--muted)" }}>.{ENS_PARENT}</span>
+      <div className="ens-name tnum" style={{ display: "flex", flexWrap: "wrap", alignItems: "baseline" }}>
+        <span style={{ color: "var(--signal)" }}>{label}</span>
+        <span style={{ color: "var(--ink)" }}>.{ENS_PARENT}</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "4px 12px", fontSize: 12 }}>
+      <div className="ens-meta">
         <span className="label">subname</span>
         <span className="tnum">{label}</span>
         <span className="label">parent</span>
@@ -55,27 +55,18 @@ export function EnsVerify({ label, resolver: known, lookup = true }: { label: st
         {links.map((l) => {
           const body = (
             <>
-              <span style={{ fontSize: 13, color: "var(--ink)" }}>{l.text}</span>
-              <span style={{ fontSize: 11, color: "var(--faint)" }}>
+              <span className="ens-link-title">{l.text}</span>
+              <span className="ens-link-sub">
                 {l.sub} {l.internal ? "→" : "↗"}
               </span>
             </>
           );
-          const style = {
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 10,
-            alignItems: "baseline",
-            flexWrap: "wrap" as const,
-            padding: "7px 0",
-            borderBottom: "1px solid var(--line)",
-          };
           return l.internal ? (
-            <Link key={l.href} href={l.href} className="link" style={style}>
+            <Link key={l.href} href={l.href} className="ens-link">
               {body}
             </Link>
           ) : (
-            <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="link" style={style}>
+            <a key={l.href} href={l.href} target="_blank" rel="noreferrer" className="ens-link">
               {body}
             </a>
           );
