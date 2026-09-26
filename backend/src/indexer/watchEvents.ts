@@ -1,6 +1,7 @@
 import type { AbiEvent, Address, Hex, Log } from "viem";
 import { config, type ContractName } from "../config.js";
-import { abis, isDeployed, publicClient } from "../chain/contracts.js";
+import { createPublicClient, http } from "viem";
+import { abis, chain, isDeployed } from "../chain/contracts.js";
 import { jsonSafe } from "../lib/json.js";
 
 /**
@@ -31,6 +32,9 @@ const SOURCES: [ContractName, readonly unknown[]][] = [
 ];
 
 const CHUNK = 2_000n;
+
+/** Separate client for indexing — see config.chain.indexerRpcUrl. */
+const publicClient = createPublicClient({ chain, transport: http(config.chain.indexerRpcUrl) });
 const events: FeedEvent[] = [];
 const seen = new Set<string>();
 const blockTimes = new Map<bigint, number>();

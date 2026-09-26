@@ -93,6 +93,13 @@ export const config = {
     signerPk: optional("BACKEND_SIGNER_PK", isLocal ? ANVIL_SIGNER_PK : "") as Hex | "",
     agentPk: optional("AGENT_PK", isLocal ? ANVIL_AGENT_PK : "") as Hex | "",
     deployBlock: BigInt(optional("DEPLOY_BLOCK", String(deployments.deployBlock ?? 0))),
+    /**
+     * Log indexing needs wide eth_getLogs ranges; Alchemy's free tier caps them at 10 blocks, so the
+     * indexer uses its own RPC (Tenderly's public Sepolia gateway by default).
+     */
+    indexerRpcUrl: isLocal
+      ? optional("LOCAL_RPC_URL", "http://127.0.0.1:8545")
+      : optional("INDEXER_RPC_URL", "https://sepolia.gateway.tenderly.co"),
     pollMs: isLocal ? 1_000 : 4_000,
   },
 
