@@ -105,12 +105,14 @@ div.label:first-child::before, .eyebrow::before {
 .tnum { font-variant-numeric: tabular-nums; }
 .pixel { font-family: var(--font-display), sans-serif; font-weight: 700; letter-spacing: -0.02em; }
 /* wordmark: an accent shield-mark + the name */
+/* The Surety mark (two interlocking hexagons), drawn as a mask so it takes the ink colour of either theme. */
 .sure {
-  display: inline-grid; place-items: center;
-  width: 1.15em; height: 1.15em; margin-right: 0.28em;
-  background: var(--signal); color: var(--surface);
-  border-radius: 0.32em 0.32em 0.55em 0.55em;
-  font-size: 0.8em; vertical-align: -0.12em;
+  display: inline-block; flex-shrink: 0;
+  width: 1.3em; height: 1.3em; margin-right: 0.32em;
+  background-color: var(--ink);
+  -webkit-mask: url(/logos/surety-mark.png) center / contain no-repeat;
+  mask: url(/logos/surety-mark.png) center / contain no-repeat;
+  vertical-align: -0.22em;
 }
 .gain { color: var(--gain); }
 .loss { color: var(--loss); }

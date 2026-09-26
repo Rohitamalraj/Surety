@@ -198,7 +198,7 @@
 .pitch-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .pitch-body { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .pitch-hero { font-size: clamp(64px, 12vw, 176px); line-height: 0.9; margin: 18px 0 10px; letter-spacing: 0.01em; display: inline-flex; align-items: center; }
-.pitch-hero .sure { font-size: 0.55em; }
+.pitch-hero .sure { font-size: 0.72em; margin-right: 0.22em; }
 .pitch-lede { font-family: var(--font-display), sans-serif; font-size: clamp(20px, 2.4vw, 32px); font-weight: 600; max-width: 32ch; margin: 6px auto 0; }
 .pitch-sub { color: var(--muted); font-size: clamp(14px, 1.2vw, 17px); max-width: 60ch; margin: 14px auto 0; line-height: 1.6; }
 .pitch-trio { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 40px; }

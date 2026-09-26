@@ -38,9 +38,7 @@ function Intro() {
         ETHGlobal Tokyo 2026
       </div>
       <h1 className="pitch-hero">
-        <span className="sure" aria-hidden>
-          ✓
-        </span>
+        <span className="sure" aria-hidden />
         SURETY
       </h1>
       <p className="pitch-lede">Parametric, on-chain insurance for AI agents.</p>

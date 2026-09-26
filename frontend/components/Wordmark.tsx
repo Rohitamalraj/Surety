@@ -1,4 +1,4 @@
-/** Surety wordmark: an accent shield tile with a check, then the name in the display face. */
+/** Surety wordmark: the interlocking-hexagon mark, then the name in the display face. */
 export function Wordmark({ size = 20 }: { size?: number; caret?: boolean }) {
   return (
     <span
@@ -13,9 +13,7 @@ export function Wordmark({ size = 20 }: { size?: number; caret?: boolean }) {
         alignItems: "center",
       }}
     >
-      <span className="sure" aria-hidden>
-        ✓
-      </span>
+      <span className="sure" aria-hidden />
       surety
     </span>
   );
