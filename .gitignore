@@ -1,0 +1,27 @@
+# Source material (not part of the repo)
+*.pdf
+*.mp4
+*.mov
+*.docx
+
+# Dependencies & builds
+node_modules/
+frontend/.next/
+dist/
+build/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
