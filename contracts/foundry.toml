@@ -14,3 +14,14 @@ sepolia = "${SEPOLIA_RPC_URL}"
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+
+# Reproducible randomized ledger checks. Run with FOUNDRY_PROFILE=deep.
+[profile.default.invariant]
+runs = 64
+depth = 64
+fail_on_revert = true
+
+[profile.deep.invariant]
+runs = 256
+depth = 128
+fail_on_revert = true
