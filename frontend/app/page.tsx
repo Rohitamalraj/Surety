@@ -40,10 +40,10 @@ const HERO = {
     "Parametric insurance for AI agents that spend money. When an insured agent breaks its own published rules, the payout is a contract call. No adjuster, no lawsuit, same day.",
 };
 
-const SPONSOR_LOGOS: { key: string; title: string; src: string }[] = [
-  { key: "ens", title: "ENSv2", src: "/logos/ens.svg" },
+const SPONSOR_LOGOS: { key: string; title: string; src: string; color?: string }[] = [
+  { key: "ens", title: "ENSv2", src: "/logos/ens.svg", color: "/logos/ens-color.png" },
   { key: "world", title: "World ID", src: "/logos/world.svg" },
-  { key: "uniswap", title: "Uniswap v4", src: "/logos/uniswap.png" },
+  { key: "uniswap", title: "Uniswap v4", src: "/logos/uniswap.png", color: "/logos/uniswap-color.jpeg" },
 ];
 
 // No markers: the globe is illustration only — it does not claim where insured agents are.
@@ -170,10 +170,16 @@ export default function HomePage() {
                       background: "var(--surface)",
                     }}
                   >
-                    <span
-                      className="sponsor sponsor-static"
-                      style={{ width: 20, height: 20, WebkitMaskImage: `url(${s.src})`, maskImage: `url(${s.src})` }}
-                    />
+                    {s.color ? (
+                      // Full-colour brand mark, same 20px footprint as the monochrome ones.
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={s.color} alt="" width={20} height={20} style={{ width: 20, height: 20, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    ) : (
+                      <span
+                        className="sponsor sponsor-static"
+                        style={{ width: 20, height: 20, WebkitMaskImage: `url(${s.src})`, maskImage: `url(${s.src})` }}
+                      />
+                    )}
                     <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{s.title}</span>
                   </span>
                 ))}
