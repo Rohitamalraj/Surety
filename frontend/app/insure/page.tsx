@@ -223,8 +223,9 @@ function InsureInner() {
           <LineArt shape="signal" className="h-full w-full" />
         </div>
         <div className="relative z-10 mx-auto max-w-6xl px-6" style={{ padding: "clamp(56px, 9vw, 110px) 24px clamp(40px, 6vw, 70px)" }}>
+          <div className="beside-panel">
           <div className="label rise">{profile ? `insure · ${profile.name.toLowerCase()}` : "insure"}</div>
-          <h1 className="rise" style={{ fontSize: "clamp(40px, 7.5vw, 92px)", marginTop: 14, lineHeight: 0.95, maxWidth: "14ch", animationDelay: "80ms" }}>
+          <h1 className="rise" style={{ fontSize: "clamp(40px, 6.2vw, 84px)", marginTop: 14, lineHeight: 0.95, animationDelay: "80ms" }}>
             Insure your agent.
           </h1>
           <p className="rise" style={{ marginTop: 18, color: "var(--muted)", maxWidth: "56ch", fontSize: 15, animationDelay: "160ms" }}>
@@ -249,6 +250,7 @@ function InsureInner() {
               anything.
             </p>
           )}
+          </div>
         </div>
       </section>
 
