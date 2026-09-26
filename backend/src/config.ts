@@ -81,6 +81,11 @@ export const config = {
     action: optional("IDKIT_ACTION", "surety-buy-policy"),
     environment: optional("IDKIT_ENVIRONMENT", "staging") as "staging" | "production",
     verifyBaseUrl: optional("IDKIT_VERIFY_URL", "https://developer.world.org/api/v4/verify"),
+    /**
+     * Staging (simulator) proofs are only accepted inside a 24h staging window opened by the app's
+     * team; the token it issues must be sent as `x-staging-verification-token`. Not needed in production.
+     */
+    stagingToken: optional("IDKIT_STAGING_TOKEN"),
   },
 
   chain: {

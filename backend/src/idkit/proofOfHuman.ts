@@ -86,7 +86,12 @@ interface PortalVerifyResponse {
 export async function verifyWithPortal(result: IDKitResult): Promise<bigint> {
   const res = await fetch(`${config.idkit.verifyBaseUrl}/${config.idkit.rpId}`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: {
+      "content-type": "application/json",
+      ...(config.idkit.environment === "staging" && config.idkit.stagingToken
+        ? { "x-staging-verification-token": config.idkit.stagingToken }
+        : {}),
+    },
     body: JSON.stringify(result),
   });
   const body = (await res.json().catch(() => ({}))) as PortalVerifyResponse;
