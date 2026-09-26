@@ -133,7 +133,7 @@ async function attackSwap(node: Hex, counterparty: Address, amount: bigint): Pro
 }
 
 /** Exact-input "sell `amount` MockUSDC" through the canonical pool, declaring `counterparty` to the hook. */
-function swapArgs(node: Hex, counterparty: Address, amount: bigint) {
+export function swapArgs(node: Hex, counterparty: Address, amount: bigint) {
   const pool = config.deployments.pool;
   const key = {
     currency0: pool?.currency0 ?? "0x0000000000000000000000000000000000000000",
@@ -160,7 +160,7 @@ const blockedMessage = (reason: number) =>
       ? "Blocked: counterparty not on allowlist"
       : "Blocked: policy violation";
 
-function describeRevert(err: unknown): { reason: string; byHook: boolean } {
+export function describeRevert(err: unknown): { reason: string; byHook: boolean } {
   if (err instanceof BaseError) {
     const revert = err.walk((e) => e instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;
     const data = revert?.data;

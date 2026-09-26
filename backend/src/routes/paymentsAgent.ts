@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { isAddress, isHex, type Address, type Hex } from "viem";
 import { config } from "../config.js";
 import { publicClient, readPolicy } from "../chain/contracts.js";
-import { chat, hostedAgentAddress, readRules, type ChatMessage } from "../agent/payments.js";
+import { chat, deliver, hostedAgentAddress, inbox, readRules, type ChatMessage } from "../agent/payments.js";
 import { describeError } from "../lib/errors.js";
 
 /**
@@ -76,4 +76,20 @@ paymentsAgent.post("/chat", async (c) => {
   } catch (e) {
     return c.json({ error: describeError(e) }, 500);
   }
+});
+
+// ---------------------------------------------------------------- inbox (public: anyone can message an agent)
+
+paymentsAgent.get("/inbox/:node", (c) => {
+  const node = c.req.param("node");
+  if (!isNode(node)) return c.json({ error: "bad node" }, 400);
+  return c.json(inbox(node));
+});
+
+paymentsAgent.post("/inbox/:node", async (c) => {
+  const node = c.req.param("node");
+  if (!isNode(node)) return c.json({ error: "bad node" }, 400);
+  const body = (await c.req.json().catch(() => ({}))) as { from?: string; subject?: string; body?: string };
+  if (!body.body || typeof body.body !== "string") return c.json({ error: "body is required" }, 400);
+  return c.json(deliver(node, { from: String(body.from ?? "unknown"), subject: String(body.subject ?? "(no subject)"), body: body.body }));
 });

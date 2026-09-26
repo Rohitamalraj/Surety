@@ -108,7 +108,7 @@ export const config = {
   /** The hosted payments agent's brain: Groq's OpenAI-compatible chat API with tool calling. */
   groq: {
     apiKey: optional("GROQ_API_KEY"),
-    model: optional("GROQ_MODEL", "openai/gpt-oss-120b"),
+    model: optional("GROQ_MODEL", "openai/gpt-oss-20b"),
     baseUrl: optional("GROQ_BASE_URL", "https://api.groq.com/openai/v1"),
   },
 
