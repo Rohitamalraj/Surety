@@ -24,6 +24,7 @@ const useDevIdp = config.network === "local" && !config.worldId.clientId;
 const DEV_SUB = "local-demo-sub"; // keccak256 matches the devnet policy's subHash
 
 app.use("/api/*", cors({ origin: config.frontendUrl }));
+app.use("/health", cors({ origin: config.frontendUrl }));
 
 app.get("/health", async (c) => {
   let block: string | null = null;
@@ -178,6 +179,11 @@ app.post("/api/claims/:id/execute", async (c) => {
     return c.json({ error: describeError(err) }, 500);
   }
 });
+
+/** Network + contract addresses for the frontend (from deployments/<network>.json). */
+app.get("/api/deployments", (c) =>
+  c.json({ network: config.network, chainId: config.chain.chainId, ...config.deployments }),
+);
 
 // Registered last so the World ID routes above answer first.
 app.route("/api/idkit", idkit);
