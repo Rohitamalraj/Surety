@@ -10,10 +10,12 @@ import { useHealth } from "@/lib/hooks";
 import { short } from "@/lib/format";
 
 const NAV: [string, string][] = [
-  ["/create", "Create policy"],
-  ["/demo", "Attack replay"],
-  ["/policy", "Policies"],
+  ["/agents", "Agents"],
+  ["/insure", "Insure"],
+  ["/dashboard", "My policies"],
+  ["/policy", "Lookup"],
   ["/feed", "Feed"],
+  ["/demo", "Attack replay"],
 ];
 
 // Sticky, translucent bar over the paper grain — same construction as the reference header:

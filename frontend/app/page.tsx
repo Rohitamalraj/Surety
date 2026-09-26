@@ -105,7 +105,7 @@ export default function HomePage() {
             </p>
 
             <div className="rise" style={{ animationDelay: "250ms", marginTop: 26, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link href="/create" className="btn btn-signal" style={{ borderRadius: 999, padding: "12px 20px" }}>
+              <Link href="/agents" className="btn btn-signal" style={{ borderRadius: 999, padding: "12px 20px" }}>
                 Insure an agent →
               </Link>
               <Link href="/demo" className="btn" style={{ borderRadius: 999, padding: "12px 20px", background: "var(--surface)" }}>
@@ -315,7 +315,7 @@ export default function HomePage() {
       {/* ---- CTA ---- */}
       <section className="mx-auto max-w-6xl px-6" style={{ padding: "0 24px clamp(48px, 8vw, 90px)" }}>
         <Link
-          href="/create"
+          href="/insure"
           className="scan"
           style={{
             display: "flex",

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useFeed } from "@/lib/hooks";
 import { ENS_PARENT } from "@/lib/config";
 import { ago, short, usdc } from "@/lib/format";
 import { LineArt } from "@/components/LineArt";
@@ -16,8 +15,7 @@ export default function PolicyLookupPage() {
   const router = useRouter();
   const [q, setQ] = useState("");
   const demo = useQuery({ queryKey: ["demo"], queryFn: api.demo, retry: 0 });
-  const feed = useFeed();
-  const issued = (feed.data ?? []).filter((e) => e.type === "PolicyIssued");
+  const issued = useQuery({ queryKey: ["policies", "all"], queryFn: () => api.policies(), refetchInterval: 20_000, retry: 0 }).data ?? [];
 
   const go = (v: string) => {
     const s = v.trim().replace(new RegExp(`\\.${ENS_PARENT.replace(".", "\\.")}$`), "");
@@ -82,18 +80,18 @@ export default function PolicyLookupPage() {
       {issued.length === 0 && <div className="label" style={{ padding: "18px 0", color: "var(--muted)" }}>no policies issued on this network yet.</div>}
       {issued.map((e) => (
         <Link
-          key={e.id}
-          href={`/policy/${e.node}`}
+          key={e.node}
+          href={`/policy/${e.label ?? e.node}`}
           className="wl-row"
           style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto auto", gap: 16, padding: "14px 6px", borderBottom: "1px solid var(--line)" }}
         >
           <span className="tnum" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-            {short(e.node, 10, 8)}
+            {e.label ? `${e.label}.${ENS_PARENT}` : short(e.node, 10, 8)}
           </span>
           <span className="tnum" style={{ color: "var(--muted)" }}>
-            {usdc(String(e.data.coverageLimit), 0)} USDC
+            {usdc(e.policy.coverageLimit, 0)} USDC
           </span>
-          <span className="label">{ago(e.timestamp)}</span>
+          <span className="label">{ago(e.issuedAt)}</span>
         </Link>
       ))}
     </main>
