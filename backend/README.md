@@ -40,6 +40,50 @@ Copy `.env.example` → `.env`, fill in World ID client, `SEPOLIA_RPC_URL`, `BAC
 Amounts are MockUSDC base units (6 decimals) as decimal strings. Errors: `{error}` with the
 contract's custom error name when a transaction reverts (e.g. `NoViolation(1)`).
 
+## IDKit — proof of unique human before buying (PRD §11.2)
+
+**Trust moment:** the shared pool pays claims, so one person must not open many policies from many
+wallets and farm it. Before buying, the policyholder proves with World ID (**Proof of Human**
+preset — the minimum sufficient credential, no personal data) that they're a unique human.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/idkit/config` | `{enabled, devMode, app_id, rp_id, action, environment}` |
+| POST | `/api/idkit/rp-signature` | `{sig, nonce, created_at, expires_at}` → build `rp_context` |
+| POST | `/api/idkit/verify` `{address, idkitResponse}` | forward the widget result **as-is** → `{verified, txHash}`; `409` if this human already verified another wallet |
+| GET | `/api/idkit/status/:address` | `{verified, signal}` |
+| POST | `/api/idkit/dev-verify` `{address, as?}` | local devnet only, when IDKit isn't configured |
+
+Frontend (React, `@worldcoin/idkit@^4`):
+
+```tsx
+<IDKitRequestWidget
+  app_id={cfg.app_id} action={cfg.action} rp_context={rpContext}
+  environment={cfg.environment} allow_legacy_proofs={true}
+  preset={proofOfHuman({ signal: address.toLowerCase() })}   // must be the lowercase wallet
+  handleVerify={async (result) => {
+    const r = await fetch(`${API}/api/idkit/verify`, { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ address, idkitResponse: result }) });
+    if (!r.ok) throw new Error((await r.json()).error);
+  }}
+  onSuccess={() => setHumanVerified(true)}
+/>
+```
+
+What the backend enforces, in order: action matches · environment matches · the request nonce was
+issued by us and is used once · every response's `signal_hash` equals `hashSignal(lowercase wallet)` ·
+Developer Portal `POST /api/v4/verify/{rp_id}` says `success` · then `WorldIdGate.registerHuman(wallet,
+nullifier)` on-chain — a nullifier can back one wallet, ever. The chain is the uniqueness store.
+
+**Alternative paths:** not yet verified → `/auth/worldid/start?purpose=enroll` redirects back with
+`?error=unique_human_required` (and on-chain `verifyEnrollment` returns false while
+`requireUniqueHuman` is on) · same human, second wallet → `409` · invalid proof / wrong wallet /
+wrong environment / replay → `400` with a readable `error`.
+
+**Testing:** set `IDKIT_ENVIRONMENT=staging` and use the World ID Simulator
+(https://simulator.worldcoin.org) with a *staging* action. For real phones, create a *production*
+action and set `production` — environments must match or proofs silently fail.
+
 ## Demo flow (what `/demo` should click through)
 
 1. `POST /api/agent/step {"step":"normal"}` — within policy

@@ -1,15 +1,16 @@
 import { serve } from "@hono/node-server";
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
-import { isAddress, type Hex } from "viem";
+import { isAddress, type Address, type Hex } from "viem";
 import { config } from "./config.js";
-import { executeWithApproval, publicClient } from "./chain/contracts.js";
+import { abis, addr, executeWithApproval, isDeployed, publicClient } from "./chain/contracts.js";
 import { buildAuthorizeUrl, exchangeCode, pkcePair, verifyIdToken, type WorldIdClaims } from "./worldid/oidc.js";
 import { createSession, getSession, publicView, takeSessionByState, type Session } from "./worldid/sessions.js";
 import { completeEnrollment } from "./worldid/verifyProofOfHuman.js";
 import { completeClaimCheck, fail } from "./worldid/verifyFreshCheck.js";
 import { startIndexer, syncNow } from "./indexer/watchEvents.js";
 import { data } from "./routes/data.js";
+import { idkit } from "./routes/idkit.js";
 import { describeError } from "./lib/errors.js";
 
 export const app = new Hono();
@@ -51,6 +52,9 @@ app.get("/auth/worldid/start", async (c) => {
   if (purpose === "enroll") {
     const address = c.req.query("address");
     if (!address || !isAddress(address)) return c.text("address required", 400);
+    if (await needsProofOfHuman(address)) {
+      return c.redirect(`${config.frontendUrl}${returnTo}${returnTo.includes("?") ? "&" : "?"}error=unique_human_required`, 302);
+    }
     session = createSession({ purpose, address, returnTo, verifier });
   } else if (purpose === "claim") {
     const claimId = c.req.query("claimId");
@@ -70,6 +74,15 @@ app.get("/auth/worldid/start", async (c) => {
   });
   return c.redirect(url, 302);
 });
+
+/** IDKit alternative path: when the gate requires it, enrollment waits for proof of unique human. */
+async function needsProofOfHuman(address: Address): Promise<boolean> {
+  if (!isDeployed()) return false;
+  const gate = addr("WorldIdGate");
+  const required = await publicClient.readContract({ address: gate, abi: abis.gate, functionName: "requireUniqueHuman" });
+  if (!required) return false;
+  return !(await publicClient.readContract({ address: gate, abi: abis.gate, functionName: "isVerifiedHuman", args: [address] }));
+}
 
 const backToFrontend = (c: Context, s: Session) =>
   c.redirect(`${config.frontendUrl}/worldid/return?session=${s.id}`, 302);
@@ -167,6 +180,7 @@ app.post("/api/claims/:id/execute", async (c) => {
 });
 
 // Registered last so the World ID routes above answer first.
+app.route("/api/idkit", idkit);
 app.route("/api", data);
 
 if (process.env.NODE_ENV !== "test") {
