@@ -7,6 +7,7 @@ import { LineArt } from "@/components/LineArt";
 import { PoweredBy } from "@/components/PoweredBy";
 import { Wordmark } from "@/components/Wordmark";
 import { Footer } from "@/components/Footer";
+import { useTheme } from "@/lib/theme";
 
 const MECHANISM = [
   {
@@ -128,6 +129,7 @@ export default function HomePage() {
   const [hovered, setHovered] = useState<Sponsor | null>(null);
   const active = hovered ? SPONSOR_COPY[hovered] : DEFAULT;
   const swapKey = hovered ?? "default";
+  const dark = useTheme() === "dark";
 
   return (
     <main>
@@ -235,14 +237,14 @@ export default function HomePage() {
             <Globe
               className="h-full w-full"
               theta={0.28}
-              dark={0}
+              dark={dark ? 1 : 0}
               scale={1}
               diffuse={1.1}
               mapSamples={20000}
-              mapBrightness={3.2}
-              baseColor="#c7d7ff"
-              markerColor="#2f6bff"
-              glowColor="#dbe6ff"
+              mapBrightness={dark ? 6 : 3.2}
+              baseColor={dark ? "#27365f" : "#c7d7ff"}
+              markerColor={dark ? "#7aa2ff" : "#2f6bff"}
+              glowColor={dark ? "#1f2d57" : "#dbe6ff"}
               markers={AGENT_MARKERS}
               enableZoom={false}
               autoRotateSpeed={0.0035}

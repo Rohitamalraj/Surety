@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useTheme } from "@/lib/theme";
 
 /**
  * Surety's illustration engine: animated contour / signal line art, stroked in the accent blue.
@@ -20,6 +21,7 @@ const smooth = (a: number, b: number, x: number) => {
 
 export function LineArt({ shape, className }: { shape: LineShape; className?: string }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
+  const theme = useTheme();
 
   useEffect(() => {
     const el = ref.current;
@@ -200,7 +202,7 @@ export function LineArt({ shape, className }: { shape: LineShape; className?: st
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
     };
-  }, [shape]);
+  }, [shape, theme]);
 
   return (
     <div className={className} aria-hidden="true">

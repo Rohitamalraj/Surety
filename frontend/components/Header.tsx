@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useConnect, useConnection, useDisconnect } from "wagmi";
 import { Wordmark } from "./Wordmark";
+import { ThemeToggle } from "./ThemeToggle";
 import { useHealth } from "@/lib/hooks";
 import { short } from "@/lib/format";
 
@@ -54,6 +55,7 @@ export function Header() {
       </nav>
 
       <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+        <ThemeToggle />
         <NetworkBadge />
         {mounted ? <WalletButton /> : <span className="label flick">wallet…</span>}
       </div>

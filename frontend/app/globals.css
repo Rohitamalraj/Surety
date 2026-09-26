@@ -25,6 +25,32 @@
   --grid: oklch(0.52 0.12 258 / 0.06);
 }
 
+/* Dark theme — deep navy paper, the same single blue accent. Toggled from the header
+   (data-theme on <html>, persisted; defaults to the system preference). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(0.165 0.022 262);
+  --bg-2: oklch(0.2 0.026 262);
+  --surface: oklch(0.205 0.026 262);
+  --surface-2: oklch(0.245 0.03 262);
+  --line: oklch(0.31 0.03 262);
+  --line-strong: oklch(0.43 0.035 262);
+  --ink: oklch(0.95 0.01 255);
+  --muted: oklch(0.75 0.02 258);
+  --faint: oklch(0.6 0.025 258);
+  --loss: oklch(0.69 0.17 25);
+  --gain: oklch(0.73 0.14 255);
+  --signal: oklch(0.68 0.18 258);
+  --signal-soft: oklch(0.3 0.08 258);
+  --tint: oklch(0.215 0.04 260);
+  --accent-ink: oklch(0.83 0.1 255);
+  --dark: oklch(0.12 0.03 262);
+  --dark-ink: oklch(0.95 0.01 255);
+  --grid: oklch(0.72 0.12 258 / 0.06);
+}
+:root { color-scheme: light; }
+html { transition: background-color 0.25s var(--ease-out-quart, ease); }
+
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);

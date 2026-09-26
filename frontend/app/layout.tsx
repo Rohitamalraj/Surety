@@ -4,6 +4,7 @@ import "./globals.css";
 import "./surety.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/Header";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 // Sora for headings (geometric, confident), IBM Plex Mono for every number, address and label.
 const display = Sora({ variable: "--font-display", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
@@ -17,7 +18,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable} h-full antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${display.variable} ${mono.variable} h-full antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="min-h-full">
         <Providers>
           <Header />
