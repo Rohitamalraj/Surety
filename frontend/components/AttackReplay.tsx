@@ -363,7 +363,9 @@ function DemoInner({ mode }: { mode: Mode }) {
     { n: "5", key: "cancel", short: "", title: "World ID cancelled → held", done: claim?.status === "Held" || claim?.status === "Paid", can: false },
     { n: "6", key: "paid", short: "", title: "Verified → paid from reserve", done: claim?.status === "Paid", can: false },
   ];
-  const nextIdx = steps.findIndex((s) => !s.done);
+  // "Next" is the first unfinished step after the furthest one done (a skipped step 1 shouldn't pull focus back).
+  const lastDone = steps.reduce((acc, s, i) => (s.done ? i : acc), -1);
+  const nextIdx = steps.findIndex((s, i) => !s.done && i > lastDone);
 
   return (
     <main className="mx-auto px-6" style={{ maxWidth: 1240, padding: "clamp(40px, 7vw, 80px) 24px 100px" }}>

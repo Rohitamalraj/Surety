@@ -327,3 +327,4 @@
 .wf-dot-end { border-color: var(--ink); background: var(--ink); }
 @media (max-width: 1000px) { .wf { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wf-rail { display: none; } }
 @media (prefers-reduced-motion: reduce) { .wf-pulse { animation: none; opacity: 0; } }
+.log-line > span:last-child { overflow-wrap: anywhere; min-width: 0; }
