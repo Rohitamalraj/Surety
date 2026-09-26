@@ -28,3 +28,6 @@ Thumbs.db
 
 # Design reference (not part of the repo)
 kollateral/
+
+# written by contracts/test/FullStack.t.sol on every run
+deployments/fullstack-test.json
