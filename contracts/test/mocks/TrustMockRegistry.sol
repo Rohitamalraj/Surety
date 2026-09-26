@@ -5,7 +5,7 @@ import {IPolicyRegistry} from "../../src/interfaces/IPolicyRegistry.sol";
 import {PolicyRecord} from "../../src/interfaces/SuretyTypes.sol";
 
 /// @dev Test stand-in for Person A's PolicyRegistry. Only the parts ClaimRouter / Oracle / Gate read.
-contract MockPolicyRegistry is IPolicyRegistry {
+contract TrustMockRegistry is IPolicyRegistry {
     mapping(bytes32 => PolicyRecord) internal _policies;
     mapping(bytes32 => mapping(address => bool)) internal _allowed;
     address public router;

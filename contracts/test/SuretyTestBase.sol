@@ -11,9 +11,9 @@ import {IWorldIdGate} from "../src/interfaces/IWorldIdGate.sol";
 import {ISuretyHook} from "../src/interfaces/ISuretyHook.sol";
 import {IViolationOracle} from "../src/interfaces/IViolationOracle.sol";
 import {PolicyRecord} from "../src/interfaces/SuretyTypes.sol";
-import {MockPolicyRegistry} from "./mocks/MockPolicyRegistry.sol";
-import {MockAgentVault} from "./mocks/MockAgentVault.sol";
-import {MockSuretyHook} from "./mocks/MockSuretyHook.sol";
+import {TrustMockRegistry} from "./mocks/TrustMockRegistry.sol";
+import {TrustMockVault} from "./mocks/TrustMockVault.sol";
+import {TrustMockHook} from "./mocks/TrustMockHook.sol";
 
 /// @dev Wires Person B's real contracts against mocks of Person A's.
 abstract contract SuretyTestBase is Test {
@@ -31,9 +31,9 @@ abstract contract SuretyTestBase is Test {
     bytes32 internal constant NODE = keccak256("agent1.surety.eth");
     bytes32 internal constant SUB_HASH = keccak256("pairwise-sub-of-policyholder");
 
-    MockPolicyRegistry internal registry;
-    MockAgentVault internal vault;
-    MockSuretyHook internal hook;
+    TrustMockRegistry internal registry;
+    TrustMockVault internal vault;
+    TrustMockHook internal hook;
     WorldIdGate internal gate;
     ViolationOracle internal oracle;
     ClaimRouter internal router;
@@ -42,9 +42,9 @@ abstract contract SuretyTestBase is Test {
         vm.warp(1_790_000_000);
         signer = vm.addr(signerPk);
 
-        registry = new MockPolicyRegistry();
-        vault = new MockAgentVault();
-        hook = new MockSuretyHook();
+        registry = new TrustMockRegistry();
+        vault = new TrustMockVault();
+        hook = new TrustMockHook();
         gate = new WorldIdGate(signer, owner);
         oracle = new ViolationOracle(IAgentVault(address(vault)), IPolicyRegistry(address(registry)), owner);
         router = new ClaimRouter(

@@ -9,7 +9,7 @@ import {Payment, PolicyRecord, ViolationType} from "../../src/interfaces/SuretyT
 /// @dev Test/devnet stand-in for Person A's AgentVault. Records payments like the real vault and
 /// fakes the hook's swap enforcement so the backend and frontend can run end-to-end before
 /// the real v4 hook exists. Struct layouts match Uniswap v4 so the ABI is identical.
-contract MockAgentVault is IAgentVault {
+contract TrustMockVault is IAgentVault {
     struct PoolKey {
         address currency0;
         address currency1;

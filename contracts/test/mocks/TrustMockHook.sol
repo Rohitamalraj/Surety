@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import {ISuretyHook} from "../../src/interfaces/ISuretyHook.sol";
 
 /// @dev Test stand-in for Person A's SuretyHook: tracks a reserve number and who got paid.
-contract MockSuretyHook is ISuretyHook {
+contract TrustMockHook is ISuretyHook {
     uint256 public reserve;
     address public router;
     mapping(address => uint256) public paid;

@@ -11,9 +11,9 @@ import {IWorldIdGate} from "../../src/interfaces/IWorldIdGate.sol";
 import {ISuretyHook} from "../../src/interfaces/ISuretyHook.sol";
 import {IViolationOracle} from "../../src/interfaces/IViolationOracle.sol";
 import {PolicyRecord} from "../../src/interfaces/SuretyTypes.sol";
-import {MockPolicyRegistry} from "../mocks/MockPolicyRegistry.sol";
-import {MockAgentVault} from "../mocks/MockAgentVault.sol";
-import {MockSuretyHook} from "../mocks/MockSuretyHook.sol";
+import {TrustMockRegistry} from "../mocks/TrustMockRegistry.sol";
+import {TrustMockVault} from "../mocks/TrustMockVault.sol";
+import {TrustMockHook} from "../mocks/TrustMockHook.sol";
 
 /// @notice Local anvil devnet: Person B's real contracts + mocks of Person A's, with a seeded demo
 /// policy. Lets the backend and frontend run the full flow before Sepolia contracts exist.
@@ -38,9 +38,9 @@ contract LocalDevnet is Script {
     address attacker = address(uint160(uint256(keccak256("surety.demo.attacker"))));
     address payout = address(uint160(uint256(keccak256("surety.demo.payout"))));
 
-    MockPolicyRegistry registry;
-    MockAgentVault vault;
-    MockSuretyHook hook;
+    TrustMockRegistry registry;
+    TrustMockVault vault;
+    TrustMockHook hook;
     WorldIdGate gate;
     ViolationOracle oracle;
     ClaimRouter router;
@@ -56,9 +56,9 @@ contract LocalDevnet is Script {
     function _deploy() internal {
         address deployer = vm.addr(DEPLOYER_PK);
         address signer = vm.addr(SIGNER_PK);
-        registry = new MockPolicyRegistry();
-        vault = new MockAgentVault();
-        hook = new MockSuretyHook();
+        registry = new TrustMockRegistry();
+        vault = new TrustMockVault();
+        hook = new TrustMockHook();
         gate = new WorldIdGate(signer, deployer);
         oracle = new ViolationOracle(IAgentVault(address(vault)), IPolicyRegistry(address(registry)), deployer);
         router = new ClaimRouter(
