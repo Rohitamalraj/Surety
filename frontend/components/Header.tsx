@@ -13,7 +13,6 @@ const NAV: [string, string][] = [
   ["/agents", "Agents"],
   ["/insure", "Insure"],
   ["/dashboard", "My policies"],
-  ["/policy", "Lookup"],
   ["/feed", "Feed"],
   ["/demo", "Live attack"],
   ["/demo/scripted", "Scripted replay"],
