@@ -1,4 +1,12 @@
-import { BaseError, ContractFunctionRevertedError, decodeEventLog, parseUnits, type Address, type Hex } from "viem";
+import {
+  BaseError,
+  ContractFunctionRevertedError,
+  decodeErrorResult,
+  decodeEventLog,
+  parseUnits,
+  type Address,
+  type Hex,
+} from "viem";
 import { config } from "../config.js";
 import { abis, addr, agentAccount, chain, publicClient, readPolicy, walletFor } from "../chain/contracts.js";
 
@@ -100,14 +108,29 @@ async function attackSwap(node: Hex, counterparty: Address, amount: bigint): Pro
   return { step: "attack-swap", txHash, reverted: true, revertReason, amount: amount.toString(), to: counterparty };
 }
 
+const blockedMessage = (reason: number) =>
+  reason === 1
+    ? "Blocked: over per-transaction cap"
+    : reason === 2
+      ? "Blocked: counterparty not on allowlist"
+      : "Blocked: policy violation";
+
 function describeRevert(err: unknown): string {
   if (err instanceof BaseError) {
     const revert = err.walk((e) => e instanceof ContractFunctionRevertedError) as ContractFunctionRevertedError | null;
-    if (revert?.data?.errorName === "PolicyViolation") {
-      const reason = Number(revert.data.args?.[1]);
-      return reason === 1 ? "Blocked: over per-transaction cap" : reason === 2 ? "Blocked: counterparty not on allowlist" : "Blocked: policy violation";
+    const data = revert?.data;
+    if (data?.errorName === "PolicyViolation") return blockedMessage(Number(data.args?.[1]));
+    // The real v4 PoolManager wraps hook reverts: WrappedError(hook, selector, reason, details).
+    if (data?.errorName === "WrappedError") {
+      try {
+        const inner = decodeErrorResult({ abi: abis.hook, data: data.args?.[2] as Hex });
+        if (inner.errorName === "PolicyViolation") return blockedMessage(Number(inner.args?.[1]));
+        return `Blocked by hook: ${inner.errorName}`;
+      } catch {
+        return "Blocked by hook";
+      }
     }
-    if (revert) return revert.reason ?? revert.shortMessage;
+    if (revert) return revert.reason ?? data?.errorName ?? revert.shortMessage;
     return err.shortMessage;
   }
   return String(err);

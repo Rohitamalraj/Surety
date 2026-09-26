@@ -39,10 +39,14 @@ export const abis = {
     "event Deposited(bytes32 indexed node, uint256 amount)",
     "event PaymentMade(bytes32 indexed node, uint256 indexed paymentId, address to, uint256 amount)",
     "event SwapExecuted(bytes32 indexed node, uint256 amountIn, uint256 amountOut)",
+    "error NotAgent(bytes32 node, address caller)",
+    "error InsufficientBalance(bytes32 node, uint256 requested, uint256 available)",
   ]),
   hook: parseAbi([
     "function liquidReserve() view returns (uint256)",
     "error PolicyViolation(bytes32 node, uint8 reason)",
+    // Uniswap v4 PoolManager wraps hook reverts in this (ERC-7751)
+    "error WrappedError(address target, bytes4 selector, bytes reason, bytes details)",
     "event PremiumDeposited(bytes32 indexed node, uint256 amount)",
     "event BackingDeposited(address indexed backer, uint256 amount)",
     "event PayoutReleased(uint256 indexed claimId, address to, uint256 amount)",
