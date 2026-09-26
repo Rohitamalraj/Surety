@@ -25,3 +25,6 @@ contracts/broadcast/
 Thumbs.db
 .vscode/
 .idea/
+
+# Design reference (not part of the repo)
+kollateral/
