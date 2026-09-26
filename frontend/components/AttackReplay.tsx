@@ -11,7 +11,6 @@ import { ATTACK_INSTRUCTION, ATTACKER, attackEmail } from "@/lib/attack";
 import { routerAbi } from "@/lib/abi";
 import { useDeployments, useFeed, useHealth, usePolicy } from "@/lib/hooks";
 import { short, txUrl, usdc } from "@/lib/format";
-import { LineArt } from "@/components/LineArt";
 import { ClaimFlow } from "@/components/ClaimFlow";
 import { SolvencyBar } from "@/components/SolvencyBar";
 import { EventRow } from "@/components/EventRow";
@@ -385,12 +384,6 @@ function DemoInner({ mode }: { mode: Mode }) {
             <span className="label">{policy.data ? "policy live" : demoErr ?? "loading…"}</span>
           </div>
 
-          <div style={{ position: "relative", height: 120, background: "var(--tint)", borderRadius: "var(--radius)", overflow: "hidden", marginBottom: 16 }}>
-            <LineArt shape="signal" className="h-full w-full" />
-            <div className="label art-caption">
-              enforce where you can · insure what gets through
-            </div>
-          </div>
 
           {health.data?.worldId === "configured" && (
             <div style={{ marginBottom: 12 }}>
