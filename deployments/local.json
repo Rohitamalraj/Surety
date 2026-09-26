@@ -1,0 +1,18 @@
+{
+  "AgentVault": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+  "ClaimRouter": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+  "PolicyRegistry": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "SuretyHook": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+  "ViolationOracle": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+  "WorldIdGate": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+  "demo": {
+    "agent": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+    "attacker": "0x2AA28206897B2c405b7c2ABA005df549114BD827",
+    "label": "agent1",
+    "merchant": "0x98dDF1B471F251c7936Ba4f484fe29f13f49eF09",
+    "node": "0xfaa727f6463e8ce1931b6073ba5375127cfa1d3c943d8172421e06c64d0e12d0",
+    "payout": "0xe846239F056eAfAe0534dC8274982560a01DFCb6",
+    "policyholder": "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+  },
+  "deployBlock": 0
+}
