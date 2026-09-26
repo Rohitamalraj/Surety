@@ -63,15 +63,15 @@ function Stats() {
     {
       big: "$150–200K",
       k: "lost to one message",
-      d: "A Morse-coded message tricked Grok's Bankr agent into sending it. Its safety block didn't survive a rewrite.",
+      d: "A Morse-coded message tricked Grok's Bankr agent into sending it.",
       src: "Grok / Bankr wallet · May 4, 2026",
     },
-    { big: "$47K", k: "burned by a runaway loop", d: "One agent kept spending for 11 days before anyone noticed.", src: "Waxell" },
-    { big: "91%", k: "of companies plan to use AI", d: "74% of small businesses already do — more agents will hold customers' money.", src: "HSB / Munich Re survey · Mar 2026" },
+    { big: "$47K", k: "burned by a runaway loop", d: "One agent spent for 11 days before anyone noticed.", src: "Waxell" },
+    { big: "91%", k: "of companies plan to use AI", d: "74% of small businesses already do.", src: "HSB / Munich Re survey · Mar 2026" },
     {
       big: "Jan 1, 2026",
       k: "AI losses excluded from cover",
-      d: "New ISO endorsements carve generative-AI losses out of standard liability policies.",
+      d: "New ISO endorsements carve AI losses out of standard policies.",
       src: "Shumaker, Loop & Kendrick",
     },
   ];
@@ -141,12 +141,12 @@ function Problem() {
 /** What we built: the product, not the mechanism. */
 function Solution() {
   const features = [
-    { t: "Cover in minutes", d: "Pick your agent's profile, set its rules, pay a premium computed live. Sybil-proof with World ID.", s: "insure" },
-    { t: "The policy is an ENS name", d: `Every policy is a public, non-transferable name like agent1.${ENS_PARENT}. Its records are the rules.`, s: "ENSv2" },
-    { t: "Rules enforced on-chain", d: "Our Uniswap v4 hook blocks any agent swap that breaks the published rules — before it executes.", s: "Uniswap v4" },
-    { t: "Violations detected automatically", d: "Every payment is recorded; a rule break is recomputed from public data. No adjuster.", s: "on-chain" },
-    { t: "Claims only a human can approve", d: "A fresh World ID check by the same person who bought the policy — a hijacked agent can't fake it.", s: "World ID" },
-    { t: "Paid the same day", d: "Verified claims are paid from a reserve held inside the hook, always kept at 2× coverage.", s: "reserve" },
+    { t: "Cover in minutes", d: "Pick a profile, set the rules, pay a premium computed live.", s: "insure" },
+    { t: "The policy is an ENS name", d: `Each policy is a public name like agent1.${ENS_PARENT}. Its records are the rules.`, s: "ENSv2" },
+    { t: "Rules enforced on-chain", d: "Our Uniswap v4 hook blocks rule-breaking swaps before they execute.", s: "Uniswap v4" },
+    { t: "Violations detected automatically", d: "Every payment is recorded and checked from public data. No adjuster.", s: "on-chain" },
+    { t: "Claims only a human can approve", d: "A fresh World ID check by the policy's buyer — a hijacked agent can't fake it.", s: "World ID" },
+    { t: "Paid the same day", d: "Paid from a reserve inside the hook, kept at 2× coverage.", s: "reserve" },
   ];
   return (
     <div className="pitch-body">
