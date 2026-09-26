@@ -15,14 +15,6 @@ import { describeError } from "./lib/errors.js";
 
 export const app = new Hono();
 
-/**
- * Local devnet only, when no World ID client is configured: a mock IdP page so the full flow can
- * be exercised on anvil (World ID won't redirect to localhost). It feeds the same server-side
- * checks as the real flow. Never active on Sepolia.
- */
-const useDevIdp = config.network === "local" && !config.worldId.clientId;
-const DEV_SUB = "local-demo-sub"; // keccak256 matches the devnet policy's subHash
-
 app.use("/api/*", cors({ origin: config.frontendUrl }));
 app.use("/health", cors({ origin: config.frontendUrl }));
 
@@ -52,7 +44,7 @@ app.get("/health", async (c) => {
     chainId: config.chain.chainId,
     publicUrl: config.publicUrl,
     block,
-    worldId: useDevIdp ? "dev-mock" : config.worldId.clientId ? "configured" : "missing",
+    worldId: config.worldId.clientId ? "configured" : "missing",
   });
 });
 
@@ -81,7 +73,7 @@ app.get("/auth/worldid/start", async (c) => {
     return c.text("purpose must be enroll or claim", 400);
   }
 
-  if (useDevIdp) return c.redirect(`/auth/worldid/dev-idp?state=${session.state}`, 302);
+  if (!config.worldId.clientId) return c.text("World ID for Agents is not configured on this backend", 503);
 
   const url = await buildAuthorizeUrl({
     state: session.state,
@@ -141,35 +133,6 @@ app.get("/auth/worldid/callback", async (c) => {
   return backToFrontend(c, session);
 });
 
-if (useDevIdp) {
-  app.get("/auth/worldid/dev-idp", (c) => {
-    const state = c.req.query("state") ?? "";
-    const link = (as: string, label: string) =>
-      `<a href="/auth/worldid/dev-idp/complete?state=${encodeURIComponent(state)}&as=${as}">${label}</a>`;
-    return c.html(`<!doctype html><meta charset="utf-8"><title>Mock World ID (local devnet)</title>
-<style>body{font:16px system-ui;background:#0a0a0b;color:#eee;display:grid;place-items:center;min-height:100vh;margin:0}
-main{max-width:420px;padding:24px}a{display:block;margin:10px 0;padding:12px 18px;border-radius:999px;background:#f3ecdc;color:#111;text-decoration:none;text-align:center}
-a.alt{background:#333;color:#eee}small{color:#999}</style>
-<main><h2>Mock World ID</h2><small>Local devnet only — stands in for sandbox.auth.world.org. The backend still runs every server-side check.</small>
-${link("holder", "Verify as the policyholder")}
-${link("other", "Verify as a different person").replace("<a ", '<a class="alt" ')}
-${link("cancel", "Cancel").replace("<a ", '<a class="alt" ')}</main>`);
-  });
-
-  app.get("/auth/worldid/dev-idp/complete", async (c) => {
-    const session = takeSessionByState(c.req.query("state") ?? "");
-    if (!session) return c.text("Unknown or already-used login attempt.", 400);
-    const as = c.req.query("as");
-    if (as === "cancel") {
-      await fail(session, "cancelled", "access_denied");
-    } else {
-      const sub = as === "holder" ? DEV_SUB : `someone-else-${Date.now()}`;
-      await finish(session, { sub, auth_time: Math.floor(Date.now() / 1000), nonce: session.nonce });
-    }
-    return backToFrontend(c, session);
-  });
-}
-
 /** Frontend polls this after returning from World ID. */
 app.get("/api/worldid/session/:id", (c) => {
   const s = getSession(c.req.param("id"));
@@ -208,7 +171,7 @@ app.route("/api", data);
 if (process.env.NODE_ENV !== "test") {
   serve({ fetch: app.fetch, port: config.port }, (info) => {
     console.log(`surety-backend on :${info.port} — network=${config.network}, public ${config.publicUrl}`);
-    if (useDevIdp) console.log("World ID: local mock IdP (no client configured)");
+    if (!config.worldId.clientId) console.warn("World ID for Agents client not configured — sign-in is disabled");
     startIndexer();
   });
 }

@@ -75,19 +75,8 @@ const SPONSOR_LOGOS: { key: Sponsor; title: string; src: string }[] = [
   { key: "uniswap", title: "Uniswap v4", src: "/logos/uniswap.png" },
 ];
 
-// Insured agents transacting around the world (stable reference so the globe isn't rebuilt).
-const AGENT_MARKERS: GlobeMarker[] = [
-  { location: [35.68, 139.69], size: 0.09 }, // Tokyo
-  { location: [37.77, -122.42], size: 0.07 }, // San Francisco
-  { location: [40.71, -74.0], size: 0.07 }, // New York
-  { location: [51.51, -0.13], size: 0.06 }, // London
-  { location: [1.35, 103.82], size: 0.06 }, // Singapore
-  { location: [52.52, 13.4], size: 0.05 }, // Berlin
-  { location: [12.97, 77.59], size: 0.06 }, // Bengaluru
-  { location: [-23.55, -46.63], size: 0.05 }, // São Paulo
-  { location: [25.2, 55.27], size: 0.05 }, // Dubai
-  { location: [-33.87, 151.21], size: 0.05 }, // Sydney
-];
+// No markers: the globe is illustration only — it does not claim where insured agents are.
+const NO_MARKERS: GlobeMarker[] = [];
 
 // Types `text` in whenever it changes (on hover), with a blinking caret. First render shows it whole.
 function Typewriter({ text, speed = 34 }: { text: string; speed?: number }) {
@@ -245,7 +234,7 @@ export default function HomePage() {
               baseColor={dark ? "#27365f" : "#c7d7ff"}
               markerColor={dark ? "#7aa2ff" : "#2f6bff"}
               glowColor={dark ? "#1f2d57" : "#dbe6ff"}
-              markers={AGENT_MARKERS}
+              markers={NO_MARKERS}
               enableZoom={false}
               autoRotateSpeed={0.0035}
             />
@@ -253,7 +242,7 @@ export default function HomePage() {
               className="label"
               style={{ position: "absolute", left: 0, right: 0, bottom: 6, textAlign: "center" }}
             >
-              agents insured · drag to rotate
+              drag to rotate
             </div>
           </div>
         </div>

@@ -4,7 +4,7 @@ import { foundry, sepolia } from "viem/chains";
 export const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8787").replace(/\/$/, "");
 
 /** `local` = anvil devnet (backend `npm run devnet`), `sepolia` = the real deployment. */
-export const NETWORK = (process.env.NEXT_PUBLIC_NETWORK ?? "local") as "local" | "sepolia";
+export const NETWORK = (process.env.NEXT_PUBLIC_NETWORK ?? "sepolia") as "local" | "sepolia";
 
 export const CHAIN = NETWORK === "sepolia" ? sepolia : foundry;
 

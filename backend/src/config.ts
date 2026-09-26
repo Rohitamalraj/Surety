@@ -49,7 +49,6 @@ const isLocal = network === "local";
 // anvil's well-known dev keys (#1 backend signer, #2 agent, #3 policyholder). Local devnet only — never real funds.
 const ANVIL_SIGNER_PK = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 const ANVIL_AGENT_PK = "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a";
-const ANVIL_POLICYHOLDER_PK = "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6";
 
 function loadDeployments(): Deployments {
   const path = fileURLToPath(new URL(`../../deployments/${network}.json`, import.meta.url));
@@ -93,8 +92,6 @@ export const config = {
     chainId: isLocal ? 31337 : 11155111,
     signerPk: optional("BACKEND_SIGNER_PK", isLocal ? ANVIL_SIGNER_PK : "") as Hex | "",
     agentPk: optional("AGENT_PK", isLocal ? ANVIL_AGENT_PK : "") as Hex | "",
-    /** Demo console only: files claims as the demo policyholder without a browser wallet. */
-    policyholderPk: optional("POLICYHOLDER_PK", isLocal ? ANVIL_POLICYHOLDER_PK : "") as Hex | "",
     deployBlock: BigInt(optional("DEPLOY_BLOCK", String(deployments.deployBlock ?? 0))),
     pollMs: isLocal ? 1_000 : 4_000,
   },

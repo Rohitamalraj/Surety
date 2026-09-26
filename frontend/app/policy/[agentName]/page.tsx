@@ -4,10 +4,10 @@ import { Suspense, use, useCallback, useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useConnection, usePublicClient, useWriteContract } from "wagmi";
-import { routerAbi } from "@/lib/abi";
+import { erc20Abi, routerAbi, vaultAbi } from "@/lib/abi";
 import { fullName, nodeFor, readPolicyRecords, RECORD_KEYS } from "@/lib/ens";
 import { useDeployments, useFeed, usePolicy } from "@/lib/hooks";
-import { short, usdc } from "@/lib/format";
+import { short, toUnits, usdc } from "@/lib/format";
 import { TIER_NAMES } from "@/lib/pricing";
 import { ClaimFlow } from "@/components/ClaimFlow";
 import { EventRow } from "@/components/EventRow";
@@ -148,6 +148,7 @@ function PolicyInner({ agentName }: { agentName: string }) {
         {/* ---- ENS record + audit trail ---- */}
         <aside style={{ minWidth: 0 }}>
           <div className="sticky-side" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {node && <FundAgent node={node} />}
             <EnsCard name={label} />
             <div className="side-card" style={{ paddingBottom: 6 }}>
               <div className="label" style={{ marginBottom: 4 }}>
@@ -162,6 +163,71 @@ function PolicyInner({ agentName }: { agentName: string }) {
         </aside>
       </div>
     </main>
+  );
+}
+
+/** The agent spends from its vault balance; anyone (usually the policyholder) can top it up. */
+function FundAgent({ node }: { node: `0x${string}` }) {
+  const { address, isConnected } = useConnection();
+  const d = useDeployments();
+  const client = usePublicClient();
+  const write = useWriteContract();
+  const [amount, setAmount] = useState("1000");
+  const [balance, setBalance] = useState<bigint | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const vault = d.data?.AgentVault;
+  const token = d.data?.MockUSDC;
+
+  const refresh = useCallback(async () => {
+    if (!client || !vault) return;
+    try {
+      setBalance(await client.readContract({ address: vault, abi: vaultAbi, functionName: "balanceOf", args: [node] }));
+    } catch {
+      setBalance(null);
+    }
+  }, [client, vault, node]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  async function fund() {
+    if (!client || !vault || !token || !address) return;
+    setMsg(null);
+    try {
+      const value = toUnits(amount);
+      const have = await client.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [address] });
+      if (have < value) {
+        setMsg("minting Sepolia test USDC…");
+        const m = await write.mutateAsync({ address: token, abi: erc20Abi, functionName: "mint", args: [address, value - have] });
+        await client.waitForTransactionReceipt({ hash: m });
+      }
+      setMsg("approving…");
+      const a = await write.mutateAsync({ address: token, abi: erc20Abi, functionName: "approve", args: [vault, value] });
+      await client.waitForTransactionReceipt({ hash: a });
+      setMsg("depositing…");
+      const h = await write.mutateAsync({ address: vault, abi: vaultAbi, functionName: "deposit", args: [node, value] });
+      await client.waitForTransactionReceipt({ hash: h });
+      setMsg("agent funded ✓");
+      void refresh();
+    } catch (e) {
+      setMsg((e as { shortMessage?: string }).shortMessage ?? (e as Error).message);
+    }
+  }
+
+  return (
+    <div className="side-card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 10 }}>
+        <span className="label">agent spending balance</span>
+        <span className="tnum" style={{ fontSize: 14 }}>{balance === null ? "—" : `${usdc(balance)} USDC`}</span>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <input className="field-input" value={amount} onChange={(e) => setAmount(e.target.value)} inputMode="decimal" />
+        <button className="btn btn-primary" disabled={!isConnected || write.isPending || !vault} onClick={() => void fund()}>
+          {write.isPending ? "…" : "Fund agent"}
+        </button>
+      </div>
+      {msg && <div className="label" style={{ marginTop: 8, textTransform: "none", letterSpacing: 0 }}>{msg}</div>}
+    </div>
   );
 }
 
@@ -198,7 +264,13 @@ function EnsCard({ name }: { name?: string }) {
         RECORD_KEYS.map((k) => (
           <div key={k} className="kv">
             <span>{k.replace("surety.", "")}</span>
-            <span className="tnum">{records[k] || "—"}</span>
+            <span className="tnum">
+              {!records[k]
+                ? "—"
+                : ["surety.coverageLimit", "surety.perTxCap", "surety.premium"].includes(k) && /^d+$/.test(records[k])
+                  ? `${usdc(records[k])} USDC`
+                  : records[k]}
+            </span>
           </div>
         ))}
     </div>

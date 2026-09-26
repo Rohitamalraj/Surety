@@ -4,8 +4,11 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { api, worldIdStartUrl, type DemoInfo } from "@/lib/api";
-import { useFeed, useHealth, usePolicy } from "@/lib/hooks";
+import { decodeEventLog } from "viem";
+import { useConnection, usePublicClient, useWriteContract } from "wagmi";
+import { api, type DemoInfo } from "@/lib/api";
+import { routerAbi } from "@/lib/abi";
+import { useDeployments, useFeed, useHealth, usePolicy } from "@/lib/hooks";
 import { short, txUrl, usdc } from "@/lib/format";
 import { LineArt } from "@/components/LineArt";
 import { ClaimFlow } from "@/components/ClaimFlow";
@@ -56,9 +59,11 @@ function DemoInner() {
   const [busy, setBusy] = useState<string | null>(null);
   const [node, setNode] = useState<string | undefined>();
   const [demo, setDemo] = useState<DemoInfo | null>(null);
-  const [bindMsg, setBindMsg] = useState<string | null>(null);
   const health = useHealth();
-  const bindFlow = params.get("bind") === "1";
+  const deployments = useDeployments();
+  const { address } = useConnection();
+  const write = useWriteContract();
+  const client = usePublicClient();
   const [demoErr, setDemoErr] = useState<string | null>(null);
 
   useEffect(() => setRun(load()), []);
@@ -141,12 +146,31 @@ function DemoInner() {
       };
     });
 
+  // The policyholder files the claim themselves, signed in their own wallet.
+  const isPolicyholder = !!address && !!policy.data && address.toLowerCase() === policy.data.policy.policyholder.toLowerCase();
   const file = () =>
     act("file", async (r) => {
-      const res = await api.demoFileClaim(r.paymentId!, node);
+      const router = deployments.data?.ClaimRouter;
+      if (!router || !client || !node) throw new Error("contracts not loaded");
+      if (!isPolicyholder) throw new Error("connect the policyholder wallet to file the claim");
+      const txHash = await write.mutateAsync({
+        address: router,
+        abi: routerAbi,
+        functionName: "fileClaim",
+        args: [node as `0x${string}`, BigInt(r.paymentId!)],
+      });
+      const receipt = await client.waitForTransactionReceipt({ hash: txHash });
+      let claimId: string | undefined;
+      for (const log of receipt.logs) {
+        try {
+          const ev = decodeEventLog({ abi: routerAbi, data: log.data, topics: log.topics });
+          if (ev.eventName === "ClaimFiled") claimId = ev.args.claimId.toString();
+        } catch {}
+      }
+      if (!claimId) throw new Error("claim transaction confirmed but no ClaimFiled event");
       return {
-        ...push(r, { tone: "sig", text: `policyholder filed claim #${res.claimId} for payment #${r.paymentId} · awaiting World ID`, tx: res.txHash }),
-        claimId: res.claimId,
+        ...push(r, { tone: "sig", text: `policyholder filed claim #${claimId} for payment #${r.paymentId} · awaiting World ID`, tx: txHash }),
+        claimId,
       };
     });
 
@@ -175,27 +199,6 @@ function DemoInner() {
       })
       .catch(() => {});
   }, [wid, run.claimId, save]);
-
-  useEffect(() => {
-    if (!bindFlow || !wid) return;
-    const key = `surety.demo.bind.${wid}`;
-    try {
-      if (sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key, "1");
-    } catch {}
-    setBindMsg("linking the demo policy to your World ID…");
-    api
-      .session(wid)
-      .then((s) => {
-        if (s.status !== "approved") throw new Error(`World ID ${s.status}${s.reason ? ` · ${s.reason}` : ""}`);
-        return api.demoBindHuman(wid);
-      })
-      .then(() => {
-        setBindMsg("linked ✓ the demo policy now belongs to your World ID — claims will ask for you");
-        window.history.replaceState(null, "", "/demo");
-      })
-      .catch((e) => setBindMsg(`could not link: ${(e as Error).message}`));
-  }, [bindFlow, wid]);
 
   const reset = () => {
     save({ log: [] });
@@ -240,7 +243,7 @@ function DemoInner() {
         <section style={{ minWidth: 0 }}>
           <div className="term-feed-head">
             <span>
-              <Wordmark size={14} /> <span style={{ color: "var(--faint)" }}>/ agent1.surety.eth</span>
+              <Wordmark size={14} /> <span style={{ color: "var(--faint)" }}>/ {demo ? `${demo.label}.surety.eth` : "…"}</span>
             </span>
             <span className="label">{policy.data ? "policy live" : demoErr ?? "loading…"}</span>
           </div>
@@ -258,16 +261,13 @@ function DemoInner() {
             </div>
           )}
 
-          {health.data?.worldId === "configured" && health.data.network === "local" && demo && (
-            <div className="notice" style={{ marginBottom: 16, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+          {policy.data && !isPolicyholder && (
+            <div className="notice" style={{ marginBottom: 16 }}>
+              <span>ⓘ</span>
               <span>
-                {bindMsg ?? "Real World ID is on. Link the demo policy to your World ID once, so the claim check asks for you."}
+                Step 4 is signed by the policyholder ({policy.data.policy.policyholder.slice(0, 6)}…{policy.data.policy.policyholder.slice(-4)}).
+                Connect that wallet to file the claim.
               </span>
-              {!bindMsg?.startsWith("linked") && (
-                <a className="btn btn-primary" href={worldIdStartUrl({ purpose: "enroll", address: demo.policyholder, returnTo: "/demo?bind=1" })}>
-                  ◎ Link my World ID
-                </a>
-              )}
             </div>
           )}
 
@@ -287,7 +287,9 @@ function DemoInner() {
           <div className="console" style={{ minHeight: 260 }}>
             {run.log.length === 0 ? (
               <div className="c-dim">
-                $ surety replay --agent agent1.surety.eth
+                $ surety replay --agent {demo ? `${demo.label}.surety.eth` : "…"}
+                <br />
+                the demo agent is a real key sending real transactions on-chain, scripted to play the insured AI agent.
                 <br />
                 ready. press 1 to let the agent make a normal payment.
                 <span className="tw-caret" />

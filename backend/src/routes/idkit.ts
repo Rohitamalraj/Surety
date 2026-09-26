@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { isAddress, keccak256, toHex, type Address } from "viem";
+import { isAddress, type Address } from "viem";
 import type { IDKitResult } from "@worldcoin/idkit-core";
 import { config } from "../config.js";
 import { isDeployed } from "../chain/contracts.js";
@@ -28,12 +28,9 @@ import {
  */
 export const idkit = new Hono();
 
-const devMode = () => config.network === "local" && !idkitEnabled();
-
 idkit.get("/config", (c) =>
   c.json({
     enabled: idkitEnabled(),
-    devMode: devMode(),
     app_id: config.idkit.appId || null,
     rp_id: config.idkit.rpId || null,
     action: config.idkit.action,
@@ -70,27 +67,6 @@ idkit.post("/verify", async (c) => {
     consumeNonce(body.idkitResponse.nonce);
     const { txHash, already } = await registerHuman(wallet, nullifier);
     return c.json({ verified: true, already, txHash });
-  } catch (err) {
-    if (err instanceof ProofRejected) return c.json({ verified: false, error: err.message }, err.status);
-    return c.json({ verified: false, error: describeError(err) }, 500);
-  }
-});
-
-/**
- * Local devnet only, when IDKit isn't configured: registers a deterministic fake nullifier so the
- * Create Policy flow can be built and tested without a Developer Portal app.
- */
-idkit.post("/dev-verify", async (c) => {
-  if (!devMode()) return c.json({ error: "dev-verify is only available on the local devnet" }, 404);
-  const { address, as } = await c.req
-    .json<{ address?: string; as?: string }>()
-    .catch(() => ({}) as { address?: string; as?: string });
-  if (!address || !isAddress(address)) return c.json({ error: "address required" }, 400);
-  // `as` lets you simulate the same human trying a second wallet: pass the same `as` twice.
-  const nullifier = BigInt(keccak256(toHex(`dev-human:${as ?? address.toLowerCase()}`)));
-  try {
-    const { txHash, already } = await registerHuman(address, nullifier);
-    return c.json({ verified: true, already, txHash, dev: true });
   } catch (err) {
     if (err instanceof ProofRejected) return c.json({ verified: false, error: err.message }, err.status);
     return c.json({ verified: false, error: describeError(err) }, 500);

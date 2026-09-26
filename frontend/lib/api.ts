@@ -116,7 +116,6 @@ export interface StepResult {
 
 export interface IdkitConfig {
   enabled: boolean;
-  devMode: boolean;
   app_id: `app_${string}` | null;
   rp_id: string | null;
   action: string;
@@ -135,8 +134,6 @@ export const api = {
   claim: (id: string) => req<{ status: ClaimStatus; vtype: Violation; amount: string; node: Hex; paymentId: string }>(`/api/claims/${id}`),
   demo: () => req<DemoInfo | null>("/api/demo"),
   agentStep: (step: "normal" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),
-  demoFileClaim: (paymentId: string, node?: string) => post<{ txHash: Hex; claimId: string }>("/api/demo/file-claim", { paymentId, node }),
-  demoBindHuman: (session: string) => post<{ bound: boolean; txHash: Hex }>("/api/demo/bind-human", { session }),
   session: (id: string) => req<WorldIdSession>(`/api/worldid/session/${id}`),
   executeClaim: (claimId: string, session: string) => post<{ txHash: Hex }>(`/api/claims/${claimId}/execute`, { session }),
 
@@ -145,7 +142,6 @@ export const api = {
   idkitRpSignature: () => post<{ sig: Hex; nonce: string; created_at: number; expires_at: number }>("/api/idkit/rp-signature", {}),
   idkitVerify: (address: string, idkitResponse: IDKitResult) =>
     post<{ verified: boolean; already?: boolean; txHash?: Hex; error?: string }>("/api/idkit/verify", { address, idkitResponse }),
-  idkitDevVerify: (address: string) => post<{ verified: boolean; txHash?: Hex }>("/api/idkit/dev-verify", { address }),
 };
 
 /** Full-page redirect into World ID for Agents (enrollment or fresh claim step-up). */

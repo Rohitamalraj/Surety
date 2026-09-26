@@ -7,7 +7,7 @@ import { isAddress, type Address, type Hex } from "viem";
 import { useConnect, useConnection, usePublicClient, useWriteContract } from "wagmi";
 import { api, worldIdStartUrl, type WorldIdSession } from "@/lib/api";
 import { erc20Abi, registryAbi } from "@/lib/abi";
-import { ENS_PARENT, NETWORK } from "@/lib/config";
+import { ENS_PARENT } from "@/lib/config";
 import { short, toUnits } from "@/lib/format";
 import { useDeployments } from "@/lib/hooks";
 import { maxTier, quote, TIER_NAMES } from "@/lib/pricing";
@@ -149,7 +149,7 @@ function CreateInner() {
         const bal = await client.readContract({ address: d.MockUSDC, abi: erc20Abi, functionName: "balanceOf", args: [address] });
         const need = toUnits(premium.toFixed(6));
         if (bal < need) {
-          setStatus({ tone: "info", text: "minting test USDC for the premium…" });
+          setStatus({ tone: "info", text: "minting Sepolia test USDC for the premium…" });
           const h = await write.mutateAsync({ address: d.MockUSDC, abi: erc20Abi, functionName: "mint", args: [address, need * 2n] });
           await client.waitForTransactionReceipt({ hash: h });
         }
@@ -339,18 +339,6 @@ function CreateInner() {
                         <li key={p}>{p}</li>
                       ))}
                     </ul>
-                  )}
-                  {NETWORK === "local" && (
-                    <div className="notice">
-                      <span>ⓘ</span>
-                      <span>
-                        The local devnet uses a stand-in registry, so issuing needs the Sepolia deployment. Try the{" "}
-                        <Link href="/demo" className="link" style={{ textDecoration: "underline" }}>
-                          attack replay
-                        </Link>{" "}
-                        on the seeded policy instead.
-                      </span>
-                    </div>
                   )}
                   <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                     <button

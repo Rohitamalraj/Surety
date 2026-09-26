@@ -9,6 +9,7 @@ export const registryAbi = parseAbi([
 
 export const routerAbi = parseAbi([
   "function fileClaim(bytes32 node, uint256 paymentId) returns (uint256)",
+  "event ClaimFiled(uint256 indexed claimId, bytes32 indexed node, uint256 paymentId, uint8 vtype, uint256 amount)",
   "error NotPolicyholder()",
   "error PolicyInactive()",
   "error PaymentNodeMismatch()",
@@ -25,6 +26,11 @@ export const erc20Abi = parseAbi([
 ]);
 
 export const hookAbi = parseAbi(["function depositBacking(uint256 amount)"]);
+
+export const vaultAbi = parseAbi([
+  "function deposit(bytes32 node, uint256 amount)",
+  "function balanceOf(bytes32 node) view returns (uint256)",
+]);
 
 /** ENS resolver text() — resolver address is looked up fresh on every read (invariant 4). */
 export const resolverAbi = parseAbi(["function text(bytes32 node, string key) view returns (string)"]);

@@ -39,12 +39,6 @@ export function HumanCheck({ address, onVerified }: { address: string; onVerifie
     setErr(null);
     setBusy(true);
     try {
-      if (cfg.devMode) {
-        const r = await api.idkitDevVerify(address);
-        setTx(r.txHash ?? null);
-        await refresh();
-        return;
-      }
       const s = await api.idkitRpSignature();
       setRp({ rp_id: cfg.rp_id!, nonce: s.nonce, created_at: s.created_at, expires_at: s.expires_at, signature: s.sig });
       setOpen(true);
@@ -81,11 +75,10 @@ export function HumanCheck({ address, onVerified }: { address: string; onVerifie
         policy wallet, so nobody can farm the shared pool with a hundred accounts. No personal data is shared.
       </p>
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-        <button className="btn btn-primary" disabled={!cfg || busy || (!cfg.enabled && !cfg.devMode)} onClick={() => void start()}>
-          ◎ {busy ? "working…" : cfg?.devMode ? "Mark unique human (local dev)" : "Prove you're human"}
+        <button className="btn btn-primary" disabled={!cfg || busy || !cfg.enabled} onClick={() => void start()}>
+          ◎ {busy ? "working…" : "Prove you're human"}
         </button>
-        {cfg && !cfg.enabled && !cfg.devMode && <span className="label">IDKit not configured on the backend</span>}
-        {cfg?.devMode && <span className="label">local devnet · no World App needed</span>}
+        {cfg && !cfg.enabled && <span className="label">IDKit not configured on the backend</span>}
       </div>
       {err && (
         <div className="label" style={{ color: "var(--loss)", textTransform: "none", letterSpacing: 0 }}>
