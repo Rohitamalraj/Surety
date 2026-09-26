@@ -15,5 +15,14 @@
     "currency1": "0xc51769dC7781F94F5495D86fD1852a61d9916119",
     "fee": 3000,
     "tickSpacing": 60
+  },
+  "demo": {
+    "agent": "0xcC7154C5B349F6be826872700666CF2d512bfE89",
+    "attacker": "0x2222222222222222222222222222222222222222",
+    "label": "agent1",
+    "merchant": "0x1111111111111111111111111111111111111111",
+    "node": "0xa6b04165329a19eea4808440f70258a2c8c55978d3db7f62e334d2b5bf173e5c",
+    "payout": "0xf8ba9CeDd4bd213B7cf77a53a31f8e1EDa5c93eB",
+    "policyholder": "0xf8ba9CeDd4bd213B7cf77a53a31f8e1EDa5c93eB"
   }
 }
