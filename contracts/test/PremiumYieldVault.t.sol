@@ -238,6 +238,62 @@ contract PremiumYieldVaultTest is Deployers {
     }
 
     ////////////////////////////////////////////////////////////////////////
+    // Price drift into the configured range must not brick policy issuance
+    ////////////////////////////////////////////////////////////////////////
+
+    /// @dev Found by deliberately trying to break this: ordinary public trading that pushes price into
+    /// (not even through) the vault's configured one-sided range means a later premium deposit would
+    /// need the paired token too, which the vault never holds. Before this test existed, that reverted
+    /// PolicyRegistry.issuePolicy's ENTIRE transaction — a real policyholder's purchase failing because
+    /// of unrelated pool activity. _addLiquidity now fails soft instead.
+    function test_priceDriftIntoVaultRange_doesNotRevertIssuePolicy() public {
+        _fundBacker(backer1, 1_000_000e6);
+        _issue(_params(10_000e6, 500e6, 1, 1)); // seeds the vault's range with real liquidity
+
+        bool usdcIsToken0 = Currency.unwrap(poolKey.currency0) == address(usdc);
+        bool intoRange = !usdcIsToken0;
+        swapRouter.swap(
+            poolKey,
+            SwapParams({
+                zeroForOne: intoRange,
+                amountSpecified: -int256(100e6),
+                sqrtPriceLimitX96: intoRange ? MIN_PRICE_LIMIT : MAX_PRICE_LIMIT
+            }),
+            PoolSwapTest.TestSettings({takeClaims: false, settleUsingBurn: false}),
+            ""
+        );
+
+        uint256 liquidityBefore = yieldVault.totalLiquidity();
+        uint256 sharesBefore = yieldVault.totalShares();
+        uint256 vaultValueBefore = yieldVault.totalYieldVaultValue();
+
+        address[] memory allowlist = new address[](1);
+        allowlist[0] = counterpartyOk;
+        IPolicyRegistry.IssueParams memory p2 = IPolicyRegistry.IssueParams({
+            label: "agent2",
+            agent: agent,
+            payoutAddr: payoutAddr,
+            coverageLimit: 10_000e6,
+            perTxCap: 500e6,
+            allowlist: allowlist,
+            tier: 1
+        });
+        vm.prank(policyholder);
+        // Does not revert — this is the fix. Previously reverted with ERC20InsufficientBalance from
+        // deep inside PoolManager.unlock's callback.
+        registry.issuePolicy(p2, bytes32(uint256(2)), uint64(block.timestamp + 1 hours), bytes(""));
+
+        // The premium was still charged and still split 70/30 — the reserve is unaffected either way.
+        assertEq(hook.liquidReserve(), 1_000_000e6 + 437_500_000 * 2);
+
+        // totalLiquidity didn't grow (the add failed soft), but the yield portion's value is still
+        // fully accounted for as real, uncommitted USDC sitting in the vault.
+        assertEq(yieldVault.totalLiquidity(), liquidityBefore);
+        assertGt(yieldVault.totalShares(), sharesBefore); // shares still minted fairly for the real value
+        assertApproxEqAbs(yieldVault.totalYieldVaultValue(), vaultValueBefore + 187_500_000, 2);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // Isolation from liquidReserve() / the solvency check, even under real IL
     ////////////////////////////////////////////////////////////////////////
 

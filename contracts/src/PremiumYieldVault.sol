@@ -86,6 +86,7 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
     event PoolPositionSet(int24 tickLower, int24 tickUpper);
     event SuretyHookSet(address hook);
     event PremiumShareDeposited(uint256 amount, uint128 liquidityAdded);
+    event LiquidityAddFailed(uint256 usdcAmount);
     event BackerPrincipalCredited(address indexed backer, uint256 amount);
     event YieldWithdrawn(address indexed backer, uint256 amount0, uint256 amount1);
 
@@ -210,6 +211,13 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
         accSharesPerPrincipal += sharesToMint * WAD / totalBackerPrincipal;
 
         uint128 added = _addLiquidity(toMintAgainst);
+        if (added == 0 && toMintAgainst > 0) {
+            // _addLiquidity failed softly (see its own doc comment) — shares were already fairly
+            // minted above against real value that's still sitting here as counted, uncommitted USDC
+            // (totalYieldVaultValue reads balanceOf directly), just not yet earning fees. Retry
+            // automatically folds it into the next successful deposit instead of losing track of it.
+            undistributedPremium = toMintAgainst;
+        }
         emit PremiumShareDeposited(amount, added);
     }
 
@@ -271,10 +279,12 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
     ////////////////////////////////////////////////////////////////////////
 
     /// @dev Assumes the owner-configured [tickLower, tickUpper] is genuinely one-sided for USDC at
-    /// today's price. If price has since drifted into or past that range, the pool will legitimately
-    /// require some of the paired token too; this vault holds none, so `_settleOrTake` simply fails to
-    /// pay it and the whole deposit reverts — a clean revert, never a fund-safety issue, but an
-    /// operational one (the owner must keep the range current via `setPoolPosition`).
+    /// today's price. If price has since drifted into or past that range, the pool would legitimately
+    /// need some of the paired token too, which this vault holds none of — caught below and failed
+    /// soft (returns 0, funds stay put) rather than reverting the caller's whole transaction. That
+    /// caller is PolicyRegistry.issuePolicy for a live premium charge; letting a stale range revert a
+    /// real policyholder's purchase would be worse than temporarily not deploying this slice to the
+    /// pool. The owner should still keep the range current via `setPoolPosition` when this happens.
     function _addLiquidity(uint256 usdcAmount) internal returns (uint128 addedLiquidity) {
         if (!poolKeySet) revert PoolNotSet();
         if (usdcAmount == 0) return 0;
@@ -286,8 +296,13 @@ contract PremiumYieldVault is IUnlockCallback, Ownable {
             : LiquidityAmounts.getLiquidityForAmount1(sqrtLower, sqrtUpper, usdcAmount);
         if (addedLiquidity == 0) return 0;
 
-        poolManager.unlock(abi.encode(ModifyCallbackData({liquidityDelta: int256(uint256(addedLiquidity))})));
-        totalLiquidity += addedLiquidity;
+        try poolManager.unlock(abi.encode(ModifyCallbackData({liquidityDelta: int256(uint256(addedLiquidity))})))
+        returns (bytes memory) {
+            totalLiquidity += addedLiquidity;
+        } catch {
+            addedLiquidity = 0;
+            emit LiquidityAddFailed(usdcAmount);
+        }
     }
 
     function _removeLiquidity(uint128 liquidity) internal returns (uint256 amount0, uint256 amount1) {
