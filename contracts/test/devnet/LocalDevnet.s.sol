@@ -30,7 +30,13 @@ contract LocalDevnet is Script {
     uint256 constant POLICYHOLDER_PK = 0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6;
 
     uint256 constant USDC = 1e6;
-    bytes32 constant NODE = keccak256("agent1.surety.eth");
+    /// @dev ENS namehash("agent1.surety.eth") — the same node PolicyRegistry and the frontend compute.
+    bytes32 constant NODE = keccak256(
+        abi.encodePacked(
+            keccak256(abi.encodePacked(keccak256(abi.encodePacked(bytes32(0), keccak256("eth"))), keccak256("surety"))),
+            keccak256("agent1")
+        )
+    );
     /// @dev keccak256 of the pairwise sub "local-demo-sub" — use that sub in local World ID tests.
     bytes32 constant SUB_HASH = keccak256("local-demo-sub");
 
