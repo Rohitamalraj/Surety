@@ -5,6 +5,67 @@ and `docs/TEAM_PLAN.md` §3 (the task list this log tracks against).
 
 ---
 
+## Session 3 — 2026-09-26: real-Sepolia-fork verification suite; 5 real defects found and fixed
+
+Continuation of Session 2 the same day, prompted by a direct ask to replace every ENS/Uniswap mock
+with real infrastructure and to load-test at scale before trusting anything as "done." Full detail in
+`docs/DEEP_VERIFICATION.md` and `docs/INTEGRATION_REVIEW.md` — this entry is the short version.
+
+### What was done
+1. **`contracts/test/fork/RealSepoliaFork.t.sol`** — a `vm.createSelectFork`-based suite that replaces
+   the ENS mocks used in Session 2's unit tests with the real, currently-deployed Sepolia contracts:
+   real `ETHRegistrar` commit-reveal registration of `surety.eth` (paid for in ENS's own deployed test
+   USDC via `deal()`, a fork-local cheat — never broadcast), a real `VerifiableFactory`-deployed
+   `UserRegistry` proxy as its subregistry, real `PermissionedResolver` proxies per policy, and the real
+   Sepolia Uniswap v4 `PoolManager`. Only Person B's absent `WorldIdGate` has a stand-in
+   (`RealWorldIdGate`, genuine EIP-712/ECDSA verification against a real generated keypair — not a bool
+   toggle). 21 tests, including a 256-to-1000-distinct-policyholder stress run
+   (`test_stress_manyUsersConserveFundsAndReserve`, `STRESS_USERS` env-configurable) and a handler-based
+   invariant test with an independent reference ledger (`DeepVaultInvariant.t.sol`, 32,768 randomized
+   calls at the `deep` Foundry profile, 0 unexpected reverts).
+2. **Found the fork's default RPC (publicnode's free endpoint) intermittently lacks archive state** for
+   specific accounts at the pinned block, even though it's reachable and current-tip queries on it work
+   fine — verified live with direct `cast` calls against several candidate RPCs, not assumed. Switched
+   the default to Tenderly's public gateway, which had full archive state for every account touched.
+3. **5 real defects found by this adversarial testing, all fixed and re-verified against the real
+   fork**, not just locally:
+   - `AgentVault.swap` accepted *any* `PoolKey` — a hookless (or differently-hooked) pool bypassed
+     enforcement entirely. Fixed: an owner-pinned `canonicalPoolKey` (currencies, fee, tick spacing,
+     **and hook**), rejecting anything else.
+   - `swap()` debited the *requested* input, not what actually settled — over-debited on any
+     price-limited partial fill (measured: requested 500 USDC, actually spent 2 base units, but the
+     ledger lost the full 500). Fixed: debits the real post-swap `BalanceDelta`.
+   - `recordPayout` trusted the caller's `amount` outright — one policy's overpayment could push its
+     `paidOut` past its own `coverageLimit`, corrupting the shared `totalCoverage` invariant every other
+     policy's 2x reserve depends on. Fixed: bounds credited amount at remaining coverage.
+   - ENS `surety.status` never updated to `"exhausted"` when a policy's coverage ran out. Fixed:
+     `recordPayout` now writes it to the policy's own real resolver (a new `_resolvers`/`_dnsNames`
+     mapping — not the locked `PolicyRecord` struct, which isn't ours to extend).
+   - The published `addr` record was the agent's own EOA instead of `AgentVault` (PRD §10.3). Fixed:
+     `PolicyRegistry` now takes an `agentVault` reference, wired post-deploy like `hook`/`claimRouter`.
+4. **2 findings deliberately left as-is**, because they're correct/expected behavior, not bugs: an
+   agent's direct EAC-granted `surety.streak` write and `PolicyRegistry.updateStreak` are two
+   independent paths by design (that's the point of granting the agent direct EAC access) — divergence
+   between them isn't a defect to fix. One valid enrollment signature buying two policies against the
+   test `RealWorldIdGate` demonstrates that helper's behavior, not the absent production gate's.
+5. Audited all of `contracts/src/` for hardcoded values, silent fallbacks, or mock logic — none found.
+   The only hardcoded constant is `namehash("eth")` (a mathematical fact, not a config value); every
+   real dependency address is a constructor parameter. `MockUSDC`'s naming is the PRD's own testnet
+   token, not a stubbed mock of something real.
+
+### Result
+67/67 tests passing (46 local + 21 fork), zero build warnings, confirmed at 1,000 policyholders/agents
+and with 32,768 randomized invariant calls — all after the fixes, not just before.
+
+### Not done yet
+- [ ] The two "open, needs a product decision" items from Session 2's review remain: swap output-token
+      ownership/withdrawal, and binding the allowlist check to the real `PoolManager.take` recipient
+      rather than caller-supplied metadata.
+- [ ] `WORLD_APP_ID`/`WORLD_RP_ID` appeared in the root `.env.example` during this session's continuation
+      — flagged to the user directly rather than assumed real or fabricated; not consumed by any code.
+- [ ] Still genuinely blocked on a funded Sepolia wallet for an actual broadcast deployment (unchanged
+      from Session 2).
+
 ## Session 1 — 2026-09-26: groundwork, research, dependency wiring, MockUSDC
 
 **Branch:** `a/chain` (created off `main`, which at branch time only had the shared-interfaces scaffold
