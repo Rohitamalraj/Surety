@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Globe, { type GlobeMarker } from "@/components/lightswind/globe";
 import { LineArt } from "@/components/LineArt";
@@ -33,43 +32,13 @@ const MECHANISM = [
   },
 ];
 
-type Sponsor = "ens" | "world" | "uniswap";
-
-// Hovering a sponsor logo takes over the hero with why that layer is load-bearing,
-// not decoration. DEFAULT shows when nothing is hovered.
-interface HeroCopy {
-  heading: string;
-  eyebrow: string;
-  body: string;
-}
-const DEFAULT: HeroCopy = {
+const HERO = {
   heading: "Insure the agent.",
-  eyebrow: "built on",
   body:
     "Parametric insurance for AI agents that spend money. When an insured agent breaks its own published rules, the payout is a contract call. No adjuster, no lawsuit, same day.",
 };
-const SPONSOR_COPY: Record<Sponsor, HeroCopy> = {
-  ens: {
-    heading: "The rules are the name.",
-    eyebrow: "why ENSv2",
-    body:
-      "Every policy is a non-transferable ENS name whose records are the rules: cap, allowlist, coverage. Any counterparty reads them with zero integration, and the agent's own key can edit exactly one field, its clean streak.",
-  },
-  world: {
-    heading: "Prove who's asking.",
-    eyebrow: "why World ID",
-    body:
-      "A wallet signature only proves someone holds a key, which is exactly what a hijacked agent has. Buying takes a unique human. Every payout takes a fresh World ID check by the same human who bought the policy.",
-  },
-  uniswap: {
-    heading: "The pool holds the line.",
-    eyebrow: "why Uniswap v4",
-    body:
-      "A v4 hook checks every agent swap against the published rules before it executes, and custodies the shared reserve that pays verified claims. Enforcement and the money live in the same place.",
-  },
-};
 
-const SPONSOR_LOGOS: { key: Sponsor; title: string; src: string }[] = [
+const SPONSOR_LOGOS: { key: string; title: string; src: string }[] = [
   { key: "ens", title: "ENSv2", src: "/logos/ens.svg" },
   { key: "world", title: "World ID", src: "/logos/world.svg" },
   { key: "uniswap", title: "Uniswap v4", src: "/logos/uniswap.png" },
@@ -77,33 +46,6 @@ const SPONSOR_LOGOS: { key: Sponsor; title: string; src: string }[] = [
 
 // No markers: the globe is illustration only — it does not claim where insured agents are.
 const NO_MARKERS: GlobeMarker[] = [];
-
-// Types `text` in whenever it changes (on hover), with a blinking caret. First render shows it whole.
-function Typewriter({ text, speed = 34 }: { text: string; speed?: number }) {
-  const [shown, setShown] = useState(text);
-  const first = useRef(true);
-  useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      setShown(text);
-      return;
-    }
-    setShown("");
-    let i = 0;
-    const id = window.setInterval(() => {
-      i += 1;
-      setShown(text.slice(0, i));
-      if (i >= text.length) window.clearInterval(id);
-    }, speed);
-    return () => window.clearInterval(id);
-  }, [text, speed]);
-  return (
-    <>
-      {shown}
-      <span className="tw-caret" aria-hidden />
-    </>
-  );
-}
 
 const cellHead = (n: string, k: string) => (
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -115,9 +57,6 @@ const cellHead = (n: string, k: string) => (
 );
 
 export default function HomePage() {
-  const [hovered, setHovered] = useState<Sponsor | null>(null);
-  const active = hovered ? SPONSOR_COPY[hovered] : DEFAULT;
-  const swapKey = hovered ?? "default";
   const dark = useTheme() === "dark";
 
   return (
@@ -146,7 +85,8 @@ export default function HomePage() {
                 fontWeight: 800,
               }}
             >
-              <Typewriter text={active.heading} />
+              {HERO.heading}
+              <span className="tw-caret" aria-hidden />
             </h1>
 
             <p
@@ -156,15 +96,12 @@ export default function HomePage() {
                 maxWidth: "52ch",
                 marginTop: 22,
                 minHeight: "6.4em",
-                color: hovered ? "var(--ink)" : "var(--muted)",
+                color: "var(--muted)",
                 fontSize: 15,
                 lineHeight: 1.65,
-                transition: "color 0.2s var(--ease-out-quart)",
               }}
             >
-              <span key={swapKey} className="hero-swap">
-                {active.body}
-              </span>
+              {HERO.body}
             </p>
 
             <div className="rise" style={{ animationDelay: "250ms", marginTop: 26, display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -177,37 +114,29 @@ export default function HomePage() {
             </div>
 
             <div className="rise" style={{ animationDelay: "360ms", marginTop: 34 }}>
-              <div className="label" style={{ marginBottom: 12, color: hovered ? "var(--ink)" : "var(--faint)", transition: "color 0.2s" }}>
-                <span key={swapKey} className="hero-swap">
-                  {active.eyebrow} · hover to see why
-                </span>
+              <div className="label" style={{ marginBottom: 12, color: "var(--faint)" }}>
+                built on
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                 {SPONSOR_LOGOS.map((s) => (
-                  <button
+                  <span
                     key={s.key}
-                    onMouseEnter={() => setHovered(s.key)}
-                    onMouseLeave={() => setHovered(null)}
-                    onFocus={() => setHovered(s.key)}
-                    onBlur={() => setHovered(null)}
                     style={{
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 10,
                       padding: "9px 16px 9px 12px",
                       borderRadius: 999,
-                      border: `1px solid ${hovered === s.key ? "var(--signal)" : "var(--line)"}`,
-                      background: hovered === s.key ? "var(--signal-soft)" : "var(--surface)",
-                      cursor: "pointer",
-                      transition: "border-color .2s, background .2s",
+                      border: "1px solid var(--line)",
+                      background: "var(--surface)",
                     }}
                   >
                     <span
-                      className="sponsor"
+                      className="sponsor sponsor-static"
                       style={{ width: 20, height: 20, WebkitMaskImage: `url(${s.src})`, maskImage: `url(${s.src})` }}
                     />
                     <span style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 13, color: "var(--ink)" }}>{s.title}</span>
-                  </button>
+                  </span>
                 ))}
               </div>
             </div>

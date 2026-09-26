@@ -154,6 +154,7 @@ div.label:first-child::before, .eyebrow::before {
   transition: background-color 0.2s var(--ease-out-quart), opacity 0.2s, transform 0.2s var(--ease-out-quart);
 }
 .sponsor:hover { background-color: var(--signal); opacity: 1; transform: translateY(-2px); }
+.sponsor-static:hover { background-color: var(--ink); opacity: 0.55; transform: none; }
 .scan { position: relative; }
 
 /* ---- surfaces ---- */
