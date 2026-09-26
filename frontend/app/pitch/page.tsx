@@ -98,7 +98,7 @@ function Stats() {
 
 function Problem() {
   const layers = [
-    { t: "Guardrails are private", d: "Hidden in the developer's code — unverifiable, and a rewrite can silently delete them." },
+    { t: "No insurance for AI agents", d: "Whether you run your own agent or use someone else's, nothing covers what it spends — and standard policies now exclude AI losses." },
     { t: "The agent's key proves nothing", d: "A compromised agent signs whatever it's told. Money needs a real human." },
     { t: "Insurance can't see on-chain", d: "Broker-priced, weeks to pay, built for lawsuits." },
   ];
