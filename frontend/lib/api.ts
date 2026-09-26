@@ -93,6 +93,36 @@ export interface PolicySummary {
   payments: number;
 }
 
+/** The hosted payments agent (backend/src/agent/payments.ts). */
+export interface AgentRules {
+  ensName: string | null;
+  policyholder: Address;
+  agent: Address;
+  perTxCap: string;
+  coverage: string;
+  paidOut: string;
+  vaultBalance: string;
+  allowlist: Address[];
+  active: boolean;
+}
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+export interface AgentAction {
+  type: "pay";
+  to: Address;
+  amount: string;
+  memo?: string;
+  txHash?: Hex;
+  paymentId?: string;
+  violation?: Violation;
+  error?: string;
+}
+/** Must match backend/src/routes/paymentsAgent.ts `sessionMessage` byte for byte. */
+export const agentSessionMessage = (node: string, address: string, issuedAt: string) =>
+  `Surety: let the hosted payments agent act on my instructions\nPolicy: ${node}\nWallet: ${address}\nIssued: ${issuedAt}`;
+
 export interface Solvency {
   liquidReserve: string;
   totalCoverage: string;
@@ -148,6 +178,12 @@ export const api = {
   solvency: () => req<Solvency>("/api/solvency"),
   policy: (node: string) => req<PolicyView>(`/api/policy/${node}`),
   policies: (holder?: string) => req<PolicySummary[]>(`/api/policies${holder ? `?holder=${holder}` : ""}`),
+  agentInfo: () => req<{ address: Address | null; enabled: boolean; model: string }>("/api/payments-agent/info"),
+  agentRules: (node: string) => req<AgentRules>(`/api/payments-agent/rules/${node}`),
+  agentSession: (b: { node: string; address: string; issuedAt: string; signature: Hex }) =>
+    post<{ token: string; expiresAt: number }>("/api/payments-agent/session", b),
+  agentChat: (token: string, messages: ChatMessage[]) =>
+    post<{ reply: string; actions: AgentAction[] }>("/api/payments-agent/chat", { token, messages }),
   claim: (id: string) => req<{ status: ClaimStatus; vtype: Violation; amount: string; node: Hex; paymentId: string }>(`/api/claims/${id}`),
   demo: () => req<DemoInfo | null>("/api/demo"),
   agentStep: (step: "normal" | "swap" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),

@@ -83,6 +83,13 @@ function InsureInner() {
       tier: profile.tier,
       label: f.label || `${profile.label}-${Math.random().toString(36).slice(2, 6)}`,
     }));
+    // The payments profile is the one Surety runs: its agent key is the hosted payments agent's.
+    if (profile.key === "payments") {
+      void api
+        .agentInfo()
+        .then((i) => i.address && update({ agent: i.address }))
+        .catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.key, wid]);
 

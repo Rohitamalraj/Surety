@@ -12,7 +12,6 @@ import { PoweredBy } from "@/components/PoweredBy";
 
 /** Browse agent profiles, pick one to insure; below, the agents actually insured on this network. */
 export default function AgentsPage() {
-  const demo = useQuery({ queryKey: ["demo"], queryFn: api.demo, retry: 0 });
   const live = useQuery({ queryKey: ["policies", "all"], queryFn: () => api.policies(), refetchInterval: 20_000, retry: 0 });
 
   return (
@@ -24,7 +23,7 @@ export default function AgentsPage() {
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 330px), 1fr))", gap: 16, marginTop: 28 }}>
         {AGENT_PROFILES.map((p) => (
-          <ProfileCard key={p.key} p={p} liveDemo={p.key === "payments" && !!demo.data} />
+          <ProfileCard key={p.key} p={p} live={p.key === "payments"} />
         ))}
       </div>
 
@@ -75,7 +74,7 @@ export default function AgentsPage() {
   );
 }
 
-function ProfileCard({ p, liveDemo }: { p: AgentProfile; liveDemo: boolean }) {
+function ProfileCard({ p, live }: { p: AgentProfile; live: boolean }) {
   const premium = quote({ coverage: p.coverage, tier: p.tier, streak: 0, claims: 0, periods: 0 }).premium;
   return (
     <article className="side-card" style={{ padding: "20px 20px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -134,9 +133,9 @@ function ProfileCard({ p, liveDemo }: { p: AgentProfile; liveDemo: boolean }) {
         <Link href={`/insure?type=${p.key}`} className="btn btn-signal">
           Insure · {premium.toLocaleString("en-US", { maximumFractionDigits: 2 })} USDC
         </Link>
-        {liveDemo && (
-          <Link href="/demo" className="btn">
-            See one run live →
+        {live && (
+          <Link href="/agents/payments" className="btn">
+            <span style={{ color: "var(--gain)" }}>●</span> Run it live →
           </Link>
         )}
       </div>
