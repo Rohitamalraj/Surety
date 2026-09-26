@@ -73,6 +73,16 @@ export const config = {
     acr: "https://world.org/oidc/acr/orb-v3",
   },
 
+  /** IDKit proof-of-human at policy purchase (PRD §11.2). Disabled when app/rp/key are unset. */
+  idkit: {
+    appId: optional("IDKIT_APP_ID"),
+    rpId: optional("IDKIT_RP_ID"),
+    signingKey: optional("IDKIT_SIGNING_KEY"),
+    action: optional("IDKIT_ACTION", "surety-buy-policy"),
+    environment: optional("IDKIT_ENVIRONMENT", "staging") as "staging" | "production",
+    verifyBaseUrl: optional("IDKIT_VERIFY_URL", "https://developer.world.org/api/v4/verify"),
+  },
+
   chain: {
     rpcUrl: isLocal ? optional("LOCAL_RPC_URL", "http://127.0.0.1:8545") : optional("SEPOLIA_RPC_URL"),
     chainId: isLocal ? 31337 : 11155111,
