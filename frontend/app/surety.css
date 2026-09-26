@@ -1,0 +1,162 @@
+/* =====================================================================
+   Surety additions — same grammar as globals.css (mono labels, hairlines,
+   dither, lime signal used sparingly; red/green reserved for money and
+   verdicts).
+   ===================================================================== */
+
+/* ---- form fields ---- */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-input {
+  width: 100%;
+  font-family: var(--font-mono), monospace; font-size: 13px; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 10px 12px; outline: 0;
+  transition: border-color 0.18s var(--ease-out-quart);
+}
+.field-input:focus { border-color: var(--ink); }
+.field-input::placeholder { color: var(--faint); }
+.field-hint { font-size: 11px; color: var(--faint); }
+
+/* ---- primary / ghost buttons ---- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-mono), monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--line-strong); border-radius: var(--radius);
+  padding: 10px 16px; background: transparent; color: var(--muted); cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+.btn:hover:not(:disabled) { color: var(--ink); border-color: var(--ink); }
+.btn:disabled { opacity: 0.5; cursor: default; }
+.btn-primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.btn-primary:hover:not(:disabled) { color: var(--bg); background: color-mix(in oklch, var(--ink) 86%, var(--signal)); }
+.btn-signal { background: var(--signal); border-color: var(--signal); color: var(--dark); }
+.btn-signal:hover:not(:disabled) { color: var(--dark); border-color: var(--ink); }
+.btn-danger { color: var(--loss); border-color: color-mix(in oklch, var(--loss) 45%, var(--line)); }
+.btn-danger:hover:not(:disabled) { color: var(--surface); background: var(--loss); border-color: var(--loss); }
+
+/* ---- status pills ---- */
+.pill {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  font-family: var(--font-mono), monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--muted);
+  background: var(--surface);
+}
+.pill-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--faint); }
+.pill-gain { color: var(--gain); border-color: color-mix(in oklch, var(--gain) 40%, var(--line)); background: color-mix(in oklch, var(--gain) 8%, var(--surface)); }
+.pill-gain .pill-dot { background: var(--gain); }
+.pill-loss { color: var(--loss); border-color: color-mix(in oklch, var(--loss) 40%, var(--line)); background: color-mix(in oklch, var(--loss) 8%, var(--surface)); }
+.pill-loss .pill-dot { background: var(--loss); }
+.pill-live .pill-dot { background: var(--signal); box-shadow: 0 0 0 3px color-mix(in oklch, var(--signal) 25%, transparent); }
+.pill-ink { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+
+/* ---- step rail (create policy / demo) ---- */
+.steps { display: flex; flex-direction: column; }
+.step {
+  display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px;
+  padding: 18px 0; border-bottom: 1px solid var(--line);
+}
+.step:last-child { border-bottom: 0; }
+.step-n {
+  width: 34px; height: 34px; display: grid; place-items: center;
+  border: 1px solid var(--line-strong); border-radius: var(--radius);
+  font-family: var(--font-pixel), var(--font-mono), monospace; font-size: 14px; color: var(--faint);
+  background: radial-gradient(oklch(0 0 0 / 0.16) 0.5px, transparent 0.6px) 0 0 / 3px 3px, var(--bg);
+}
+.step-done .step-n { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.step-active .step-n { border-color: var(--ink); color: var(--ink); box-shadow: 0 0 0 3px color-mix(in oklch, var(--signal) 45%, transparent); }
+.step-title { font-family: var(--font-display), sans-serif; font-weight: 600; font-size: 16px; color: var(--ink); }
+.step-lock { opacity: 0.45; pointer-events: none; }
+
+/* ---- key/value ledger rows ---- */
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--line); font-size: 12.5px; }
+.kv:last-child { border-bottom: 0; }
+.kv > span:first-child { color: var(--faint); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+.kv > span:last-child { color: var(--ink); text-align: right; overflow-wrap: anywhere; }
+
+/* ---- pricing breakdown (formula computing live) ---- */
+.formula { font-family: var(--font-mono), monospace; font-size: 12.5px; }
+.formula-row {
+  display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: 12px; align-items: baseline;
+  padding: 9px 0; border-bottom: 1px dashed var(--line);
+}
+.formula-row .sym { color: var(--ink); font-weight: 600; }
+.formula-row .expr { color: var(--faint); overflow-wrap: anywhere; }
+.formula-row .val { color: var(--ink); font-variant-numeric: tabular-nums; }
+.formula-total {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--ink);
+}
+
+/* ---- console / event log ---- */
+.console {
+  background: var(--dark); color: var(--dark-ink); border-radius: var(--radius);
+  font-family: var(--font-mono), monospace; font-size: 12px; line-height: 1.7;
+  padding: 16px 18px; position: relative; overflow: hidden;
+}
+.console::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent 0 2px, oklch(1 0 0 / 0.04) 2px 3px);
+}
+.console .c-dim { color: color-mix(in oklch, var(--dark-ink) 50%, transparent); }
+.console .c-ok { color: oklch(0.80 0.15 152); }
+.console .c-bad { color: oklch(0.72 0.17 26); }
+.console .c-sig { color: var(--signal); }
+.console a { text-decoration: underline; text-underline-offset: 2px; }
+.log-line { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; }
+
+.event-row {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; align-items: start;
+  padding: 12px 4px; border-bottom: 1px solid var(--line);
+  transition: background 0.25s var(--ease-out-quart), padding-left 0.25s var(--ease-out-quart);
+}
+.event-row:hover { background: var(--surface); padding-left: 10px; }
+.event-glyph { font-family: var(--font-pixel), monospace; font-size: 14px; line-height: 1.4; color: var(--faint); }
+
+/* ---- solvency bar ---- */
+.solv-track {
+  position: relative; height: 14px; border-radius: 999px; overflow: hidden;
+  background: var(--bg-2); border: 1px solid var(--line);
+}
+.solv-fill {
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 5px);
+  transition: width 0.9s var(--ease-out-expo);
+}
+.solv-fill-ok { background: repeating-linear-gradient(90deg, var(--gain) 0 3px, transparent 3px 5px); }
+.solv-fill-bad { background: repeating-linear-gradient(90deg, var(--loss) 0 3px, transparent 3px 5px); }
+.solv-mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); }
+
+/* ---- claim flow card ---- */
+.claim-card {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;
+}
+.claim-card-held { border-color: color-mix(in oklch, var(--loss) 45%, var(--line)); background: color-mix(in oklch, var(--loss) 5%, var(--surface)); }
+.claim-card-paid { border-color: color-mix(in oklch, var(--gain) 45%, var(--line)); background: color-mix(in oklch, var(--gain) 6%, var(--surface)); }
+
+/* ---- data table ---- */
+.ledger { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ledger th {
+  text-align: left; font-weight: 400;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint);
+  padding: 8px 10px; border-bottom: 1px solid var(--line-strong);
+}
+.ledger td { padding: 11px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.ledger tr:hover td { background: var(--surface); }
+.table-wrap { overflow-x: auto; }
+
+/* ---- page shells ---- */
+.split { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+@media (min-width: 980px) { .split { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } }
+.sticky-side { position: sticky; top: 88px; }
+.notice {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: var(--radius);
+  font-size: 12px; color: var(--muted); background: var(--surface);
+}
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.stat {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.stat-v { font-family: var(--font-display), sans-serif; font-weight: 700; font-size: 26px; line-height: 1.1; margin-top: 6px; font-variant-numeric: tabular-nums; }
