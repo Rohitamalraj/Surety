@@ -40,7 +40,12 @@ export const abis = {
     "event PaymentMade(bytes32 indexed node, uint256 indexed paymentId, address to, uint256 amount)",
     "event SwapExecuted(bytes32 indexed node, uint256 amountIn, uint256 amountOut)",
     "error NotAgent(bytes32 node, address caller)",
+    "function balanceOf(bytes32 node) view returns (uint256)",
     "error InsufficientBalance(bytes32 node, uint256 requested, uint256 available)",
+    "error CanonicalPoolNotSet()",
+    "error UnauthorizedPool()",
+    "error PoolNotUsdcPaired()",
+    "error OnlyExactInputUsdcSwapsSupported()",
   ]),
   hook: parseAbi([
     "function liquidReserve() view returns (uint256)",
