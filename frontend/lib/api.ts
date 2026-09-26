@@ -112,6 +112,8 @@ export interface StepResult {
   /** attack-swap only: SuretyHook itself rejected the swap. */
   blockedByHook?: boolean;
   paymentId?: string;
+  /** swap only: WETH received, wei. */
+  amountOut?: string;
   amount?: string;
   to?: Address;
 }
@@ -135,7 +137,7 @@ export const api = {
   policy: (node: string) => req<PolicyView>(`/api/policy/${node}`),
   claim: (id: string) => req<{ status: ClaimStatus; vtype: Violation; amount: string; node: Hex; paymentId: string }>(`/api/claims/${id}`),
   demo: () => req<DemoInfo | null>("/api/demo"),
-  agentStep: (step: "normal" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),
+  agentStep: (step: "normal" | "swap" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),
   session: (id: string) => req<WorldIdSession>(`/api/worldid/session/${id}`),
   executeClaim: (claimId: string, session: string) => post<{ txHash: Hex }>(`/api/claims/${claimId}/execute`, { session }),
 

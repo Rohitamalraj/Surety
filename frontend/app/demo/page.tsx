@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { decodeEventLog } from "viem";
+import { decodeEventLog, formatUnits } from "viem";
 import { useConnection, usePublicClient, useWriteContract } from "wagmi";
 import { api, type DemoInfo } from "@/lib/api";
 import { routerAbi } from "@/lib/abi";
@@ -20,7 +20,7 @@ import { TunnelHint } from "@/components/TunnelHint";
 
 /**
  * Attack Replay — the on-stage page (PRD §23). The scripted agent runs against the real contracts:
- * normal payment → Grok-style attack swap BLOCKED by the v4 hook → a rule-breaking transfer slips
+ * normal payment + compliant v4 swap → Grok-style attack swap BLOCKED by the v4 hook → a rule-breaking transfer slips
  * through → claim → World ID cancelled (held) → verified (paid from the reserve).
  */
 
@@ -112,8 +112,14 @@ function DemoInner() {
   const normal = () =>
     act("normal", async (r) => {
       const res = await api.agentStep("normal", node);
+      const r1 = push(r, { tone: "ok", text: `agent paid ${short(res.to)} ${usdc(res.amount)} USDC · within policy ✓ · payment #${res.paymentId}`, tx: res.txHash });
+      save(r1);
+      // Same rules on the Uniswap side: a compliant swap passes SuretyHook and really trades.
+      const sw = await api.agentStep("swap", node);
+      if (sw.reverted) throw new Error("compliant swap reverted");
+      const weth = sw.amountOut ? Number(formatUnits(BigInt(sw.amountOut), 18)).toPrecision(3) : "?";
       return {
-        ...push(r, { tone: "ok", text: `agent paid ${short(res.to)} ${usdc(res.amount)} USDC · within policy ✓ · payment #${res.paymentId}`, tx: res.txHash }),
+        ...push(r1, { tone: "ok", text: `agent swapped ${usdc(sw.amount)} USDC → ${weth} WETH on Uniswap v4 · SuretyHook: within policy ✓`, tx: sw.txHash }),
         normal: true,
       };
     });
@@ -208,7 +214,7 @@ function DemoInner() {
   };
 
   const steps: { n: string; title: string; short: string; done: boolean; can: boolean; go?: () => void; key: string }[] = [
-    { n: "1", key: "normal", short: "Normal payment", title: "Agent pays within policy", done: !!run.normal, can: !!node, go: normal },
+    { n: "1", key: "normal", short: "Pay + swap", title: "Agent pays & swaps within policy", done: !!run.normal, can: !!node, go: normal },
     { n: "2", key: "attack", short: "Attack swap", title: "Grok-style attack swap", done: !!run.attack, can: !!node, go: attack },
     { n: "3", key: "violation", short: "Rule-breaking transfer", title: "Rule-breaking transfer slips through", done: !!run.paymentId, can: !!node, go: violation },
     { n: "4", key: "file", short: "File claim", title: "Policyholder files a claim", done: !!run.claimId, can: !!run.paymentId && !run.claimId, go: file },
