@@ -100,7 +100,8 @@
 .console .c-dim { color: color-mix(in oklch, var(--dark-ink) 50%, transparent); }
 .console .c-ok { color: oklch(0.88 0 0); }
 .console .c-bad { color: oklch(0.72 0.17 26); }
-.console .c-sig { color: var(--signal); }
+/* The console is always dark, so its colours are fixed rather than theme accents. Messages (who said what) are bright + italic. */
+.console .c-sig { color: oklch(0.97 0 0); font-style: italic; }
 .console a { text-decoration: underline; text-underline-offset: 2px; }
 .log-line { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 10px; }
 
