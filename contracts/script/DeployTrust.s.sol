@@ -17,6 +17,25 @@ import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {Currency} from "v4-core/src/types/Currency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {TickMath} from "v4-core/src/libraries/TickMath.sol";
+import {ModifyLiquidityParams} from "v4-core/src/types/PoolOperation.sol";
+import {PoolModifyLiquidityTest} from "v4-core/src/test/PoolModifyLiquidityTest.sol";
+import {LiquidityAmounts} from "v4-periphery/src/libraries/LiquidityAmounts.sol";
+
+interface IWETH {
+    function deposit() external payable;
+    function approve(address spender, uint256 amount) external returns (bool);
+    function balanceOf(address owner) external view returns (uint256);
+}
+
+/// @dev Owner-only re-pointing of the pool AgentVault swaps through and PremiumYieldVault LPs into.
+interface ICanonicalPoolSetter {
+    function setCanonicalPool(PoolKey calldata key) external;
+}
+
+interface IPoolPositionSetter {
+    function setPoolPosition(PoolKey calldata key, int24 tickLower, int24 tickUpper) external;
+}
 
 /// @dev Owner-only setters on Person A's PolicyRegistry and SuretyHook.
 interface IClaimRouterSetter {
@@ -106,6 +125,7 @@ contract DeployTrust is Script {
         else if (s == keccak256("back")) stageBack();
         else if (s == keccak256("demo")) stageDemo();
         else if (s == keccak256("yield-vault")) stageYieldVault();
+        else if (s == keccak256("pool")) stagePool();
         else revert UnknownStage(stage);
     }
 
@@ -240,6 +260,88 @@ contract DeployTrust is Script {
 
         vm.writeJson(vm.toString(address(v)), _file(), ".PremiumYieldVault");
         console2.log("PremiumYieldVault:", address(v));
+    }
+
+    // ---------------------------------------------------------------- tradeable pool
+
+    /// @dev ≈ 3,000 MUSDC per WETH in raw units (1e6 per 1e18): 1.0001^-196260 ≈ 3.0e-9.
+    int24 internal constant POOL_TICK = -196_260;
+    int24 internal constant POOL_SPACING = 10;
+    uint24 internal constant POOL_FEE = 3000;
+    /// @dev Two-sided liquidity ±1,200 ticks (≈ ±12.7% price) around the start.
+    int24 internal constant LP_HALF_WIDTH = 1200;
+
+    /// @notice The original pool was initialized at a raw 1:1 price (1 WETH ≈ 1e12 MUSDC) and only ever
+    /// held the yield vault's one-sided MUSDC, so a compliant swap filled nothing. This stage opens a new
+    /// WETH/MUSDC pool on the same SuretyHook at a realistic price, seeds it with two-sided liquidity
+    /// (LP_WETH wei of WETH wrapped from the deployer's ETH, default 0.002 ETH, plus matching MUSDC),
+    /// and re-points AgentVault's canonical pool and PremiumYieldVault's one-sided range at it.
+    /// STAGE=pool.
+    function stagePool() public {
+        uint256 pk = vm.envUint("DEPLOYER_PK");
+        address me = vm.addr(pk);
+        string memory json = vm.readFile(_file());
+        address usdc = vm.parseJsonAddress(json, ".MockUSDC");
+        address weth = vm.parseJsonAddress(json, ".WETH");
+        IPoolManager pm = IPoolManager(vm.parseJsonAddress(json, ".PoolManager"));
+        (address c0, address c1) = usdc < weth ? (usdc, weth) : (weth, usdc);
+        require(c0 == weth, "stagePool assumes WETH sorts first (true on Sepolia)");
+        PoolKey memory key = PoolKey({
+            currency0: Currency.wrap(c0),
+            currency1: Currency.wrap(c1),
+            fee: POOL_FEE,
+            tickSpacing: POOL_SPACING,
+            hooks: IHooks(vm.parseJsonAddress(json, ".SuretyHook"))
+        });
+        uint256 wethIn = vm.envOr("LP_WETH", uint256(0.002 ether));
+
+        vm.startBroadcast(pk);
+        pm.initialize(key, TickMath.getSqrtPriceAtTick(POOL_TICK));
+        PoolModifyLiquidityTest router = new PoolModifyLiquidityTest(pm);
+        uint128 liquidity = _seedLiquidity(me, key, router, wethIn, usdc, weth);
+        ICanonicalPoolSetter(vm.parseJsonAddress(json, ".AgentVault")).setCanonicalPool(key);
+        // Yield vault stays one-sided MUSDC: a range entirely below the price holds only token1.
+        IPoolPositionSetter(vm.parseJsonAddress(json, ".PremiumYieldVault"))
+            .setPoolPosition(key, POOL_TICK - 6000, POOL_TICK - 60);
+        vm.stopBroadcast();
+
+        vm.writeJson(vm.toString(POOL_SPACING), _file(), ".pool.tickSpacing");
+        vm.writeJson(vm.toString(address(router)), _file(), ".LiquidityRouter");
+        console2.log("pool re-pointed; seeded liquidity:", liquidity);
+        console2.log("LiquidityRouter:", address(router));
+    }
+
+    function _seedLiquidity(
+        address me,
+        PoolKey memory key,
+        PoolModifyLiquidityTest router,
+        uint256 wethIn,
+        address usdc,
+        address weth
+    ) internal returns (uint128 liquidity) {
+        if (IWETH(weth).balanceOf(me) < wethIn) IWETH(weth).deposit{value: wethIn - IWETH(weth).balanceOf(me)}();
+        // Enough MUSDC to pair with wethIn at ~3,000/WETH, with headroom; the router pulls only what's needed.
+        uint256 usdcMax = wethIn * 3000 * 2 / 1e12;
+        if (ITestUsdc(usdc).balanceOf(me) < usdcMax) ITestUsdc(usdc).mint(me, usdcMax);
+        IWETH(weth).approve(address(router), type(uint256).max);
+        ITestUsdc(usdc).approve(address(router), type(uint256).max);
+
+        int24 lower = POOL_TICK - LP_HALF_WIDTH;
+        int24 upper = POOL_TICK + LP_HALF_WIDTH;
+        liquidity = LiquidityAmounts.getLiquidityForAmounts(
+            TickMath.getSqrtPriceAtTick(POOL_TICK),
+            TickMath.getSqrtPriceAtTick(lower),
+            TickMath.getSqrtPriceAtTick(upper),
+            wethIn,
+            usdcMax
+        );
+        router.modifyLiquidity(
+            key,
+            ModifyLiquidityParams({
+                tickLower: lower, tickUpper: upper, liquidityDelta: int256(uint256(liquidity)), salt: bytes32(0)
+            }),
+            ""
+        );
     }
 
     // ---------------------------------------------------------------- demo actors

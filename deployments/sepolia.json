@@ -14,7 +14,7 @@
     "currency0": "0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9",
     "currency1": "0xc51769dC7781F94F5495D86fD1852a61d9916119",
     "fee": 3000,
-    "tickSpacing": 60
+    "tickSpacing": 10
   },
   "demo": {
     "agent": "0xcC7154C5B349F6be826872700666CF2d512bfE89",
@@ -24,5 +24,6 @@
     "node": "0xa6b04165329a19eea4808440f70258a2c8c55978d3db7f62e334d2b5bf173e5c",
     "payout": "0xf8ba9CeDd4bd213B7cf77a53a31f8e1EDa5c93eB",
     "policyholder": "0xf8ba9CeDd4bd213B7cf77a53a31f8e1EDa5c93eB"
-  }
+  },
+  "LiquidityRouter": "0x8b1d89Cb81658962a141f575b3e5Ce49e2d7C608"
 }
