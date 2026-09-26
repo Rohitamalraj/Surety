@@ -14,6 +14,11 @@ import {Claim, ClaimStatus} from "./interfaces/SuretyTypes.sol";
 /// The backend validates the OIDC id_token server-side (issuer, signature, audience, nonce,
 /// auth_time freshness, pairwise sub) and signs an EIP-712 attestation. This contract trusts
 /// only that signer, binds each approval to one claim, and blocks replay.
+///
+/// IDKit (PRD §11.2): before buying, a policyholder proves they are a unique human. The backend
+/// verifies the IDKit proof with the World Developer Portal and records its action-scoped
+/// nullifier here — one human, one wallet — so the shared pool can't be Sybil-farmed.
+/// When `requireUniqueHuman` is on, enrollment is only valid for a verified-human wallet.
 contract WorldIdGate is IWorldIdGate, EIP712, Ownable {
     bytes32 public constant ENROLLMENT_TYPEHASH =
         keccak256("Enrollment(address policyholder,bytes32 subHash,uint64 expiry)");
@@ -31,6 +36,14 @@ contract WorldIdGate is IWorldIdGate, EIP712, Ownable {
 
     mapping(uint256 claimId => bool) private _approved;
 
+    /// @notice When true, verifyEnrollment also requires an IDKit proof-of-human for the policyholder.
+    bool public requireUniqueHuman;
+    mapping(address wallet => uint256 nullifier) public humanNullifier;
+    mapping(uint256 nullifier => address wallet) public nullifierOwner;
+
+    event HumanVerified(address indexed wallet, uint256 indexed nullifier);
+    event RequireUniqueHumanSet(bool on);
+
     error InvalidSignature();
     error Expired();
     error AlreadyApproved(uint256 claimId);
@@ -38,6 +51,10 @@ contract WorldIdGate is IWorldIdGate, EIP712, Ownable {
     error SubjectMismatch();
     error StaleAuthentication();
     error ZeroAddress();
+    error NotSigner();
+    error ZeroNullifier();
+    error NullifierUsed(uint256 nullifier, address wallet);
+    error WalletAlreadyVerified(address wallet);
 
     constructor(address signer_, address owner_) EIP712("Surety", "1") Ownable(owner_) {
         _setSigner(signer_);
@@ -56,6 +73,31 @@ contract WorldIdGate is IWorldIdGate, EIP712, Ownable {
         registry = registry_;
     }
 
+    function setRequireUniqueHuman(bool on) external onlyOwner {
+        requireUniqueHuman = on;
+        emit RequireUniqueHumanSet(on);
+    }
+
+    // ---------------------------------------------------------------- IDKit proof of human
+
+    /// @notice Records an IDKit nullifier the backend verified with the Developer Portal.
+    /// A nullifier (one human, for Surety's action) can back exactly one wallet, forever.
+    function registerHuman(address wallet, uint256 nullifier) external {
+        if (msg.sender != signer) revert NotSigner();
+        if (wallet == address(0)) revert ZeroAddress();
+        if (nullifier == 0) revert ZeroNullifier();
+        address existing = nullifierOwner[nullifier];
+        if (existing != address(0)) revert NullifierUsed(nullifier, existing);
+        if (humanNullifier[wallet] != 0) revert WalletAlreadyVerified(wallet);
+        nullifierOwner[nullifier] = wallet;
+        humanNullifier[wallet] = nullifier;
+        emit HumanVerified(wallet, nullifier);
+    }
+
+    function isVerifiedHuman(address wallet) public view returns (bool) {
+        return humanNullifier[wallet] != 0;
+    }
+
     // ---------------------------------------------------------------- enrollment
 
     function verifyEnrollment(address policyholder, bytes32 subHash, uint64 expiry, bytes calldata sig)
@@ -64,6 +106,7 @@ contract WorldIdGate is IWorldIdGate, EIP712, Ownable {
         returns (bool)
     {
         if (block.timestamp > expiry) return false;
+        if (requireUniqueHuman && !isVerifiedHuman(policyholder)) return false;
         bytes32 digest = _hashTypedDataV4(keccak256(abi.encode(ENROLLMENT_TYPEHASH, policyholder, subHash, expiry)));
         (address recovered, ECDSA.RecoverError err,) = ECDSA.tryRecover(digest, sig);
         return err == ECDSA.RecoverError.NoError && recovered == signer;

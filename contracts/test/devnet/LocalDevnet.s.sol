@@ -74,6 +74,7 @@ contract LocalDevnet is Script {
         hook.setRouter(address(router));
         vault.setRegistry(IPolicyRegistry(address(registry)));
         gate.setWiring(router, IPolicyRegistry(address(registry)));
+        gate.setRequireUniqueHuman(true); // IDKit proof-of-human gates new enrollments
     }
 
     function _seed() internal {
