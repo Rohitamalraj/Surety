@@ -276,3 +276,54 @@
 .pitch-foot { margin-top: clamp(24px, 3.5vh, 40px); font-size: clamp(17px, 1.5vw, 21px); color: var(--muted); max-width: 60ch; line-height: 1.5; }
 .pitch-card > .pitch-num, .pitch-step > .pitch-num { align-self: flex-start; }
 .pitch-h2 { max-width: 28ch; }
+
+/* ---- pitch: product features (Solution) ---- */
+.pitch-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+.pitch-feature { gap: 10px; }
+.pitch-feature-head { display: flex; align-items: center; justify-content: space-between; }
+.pitch-feature p { font-size: 14.5px; }
+
+/* ---- pitch: workflow (a rail of icon nodes with a travelling pulse) ---- */
+.wf { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin-top: 6px; }
+.wf-rail {
+  position: absolute; left: calc(100% / 12); right: calc(100% / 12); top: 63px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--line-strong) 0%, var(--ink) 50%, var(--line-strong) 100%);
+  opacity: 0.6;
+}
+.wf-pulse {
+  position: absolute; top: 50%; left: 0; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 999px;
+  background: var(--ink); box-shadow: 0 0 0 4px color-mix(in oklch, var(--ink) 18%, transparent), 0 0 18px var(--ink);
+  animation: wf-travel 6s cubic-bezier(.45, 0, .55, 1) infinite;
+}
+@keyframes wf-travel { 0% { left: 0; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+.wf-step { position: relative; display: flex; flex-direction: column; align-items: center; animation: pitch-in .5s var(--ease-out-quart, ease) both; }
+.wf-phase { height: 18px; margin-bottom: 14px; white-space: nowrap; }
+.wf-phase .tnum { color: var(--ink); margin-right: 4px; }
+.wf-node {
+  position: relative; z-index: 1; width: 64px; height: 64px; border-radius: 999px; display: grid; place-items: center;
+  background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-strong);
+  box-shadow: 0 0 0 7px var(--bg);
+  transition: transform .25s var(--ease-out-quart, ease);
+}
+.wf-node svg { width: 26px; height: 26px; }
+.wf-step:hover .wf-node { transform: translateY(-3px); }
+.wf-alert .wf-node { color: var(--loss); border-color: var(--loss); box-shadow: 0 0 0 7px var(--bg), 0 0 28px color-mix(in oklch, var(--loss) 40%, transparent); }
+.wf-end .wf-node { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.wf-card {
+  flex: 1; width: 100%; margin-top: 18px; padding: 16px 16px 14px; text-align: left;
+  display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface);
+}
+.wf-card b { font-family: var(--font-display), sans-serif; font-size: 17px; line-height: 1.2; }
+.wf-card p { margin: 0; color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+.wf-tag { margin-top: auto; align-self: flex-start; font-family: var(--font-mono), monospace; font-size: 10.5px; letter-spacing: 0.04em; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); }
+.wf-alert .wf-card { border-color: color-mix(in oklch, var(--loss) 55%, var(--line)); }
+.wf-alert .wf-tag { border-color: color-mix(in oklch, var(--loss) 60%, var(--line)); color: var(--loss); }
+.wf-end .wf-card { border-color: var(--ink); }
+.wf-legend { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 22px; font-family: var(--font-mono), monospace; font-size: 12px; color: var(--muted); }
+.wf-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.wf-dot { width: 10px; height: 10px; border-radius: 999px; border: 1.5px solid var(--line-strong); display: inline-block; }
+.wf-dot-alert { border-color: var(--loss); background: color-mix(in oklch, var(--loss) 30%, transparent); }
+.wf-dot-end { border-color: var(--ink); background: var(--ink); }
+@media (max-width: 1000px) { .wf { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wf-rail { display: none; } }
+@media (prefers-reduced-motion: reduce) { .wf-pulse { animation: none; opacity: 0; } }

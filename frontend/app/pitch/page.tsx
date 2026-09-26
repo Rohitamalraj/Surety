@@ -1,11 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import { useSolvency } from "@/lib/hooks";
-import { usdc } from "@/lib/format";
 import { ENS_PARENT } from "@/lib/config";
 
 /**
@@ -68,25 +63,15 @@ function Stats() {
     {
       big: "$150–200K",
       k: "lost to one message",
-      d: "A Morse-coded message tricked Grok's Bankr agent into sending it. The safety block that once stopped this didn't survive a rewrite.",
+      d: "A Morse-coded message tricked Grok's Bankr agent into sending it. Its safety block didn't survive a rewrite.",
       src: "Grok / Bankr wallet · May 4, 2026",
     },
-    {
-      big: "$47K",
-      k: "burned by a runaway loop",
-      d: "One agent kept spending for 11 days before anyone noticed. There was no automatic backstop.",
-      src: "Waxell",
-    },
-    {
-      big: "91%",
-      k: "of companies plan to use AI",
-      d: "74% of small businesses already do — so more agents will hold money on their customers' behalf.",
-      src: "HSB / Munich Re survey · Mar 2026",
-    },
+    { big: "$47K", k: "burned by a runaway loop", d: "One agent kept spending for 11 days before anyone noticed.", src: "Waxell" },
+    { big: "91%", k: "of companies plan to use AI", d: "74% of small businesses already do — more agents will hold customers' money.", src: "HSB / Munich Re survey · Mar 2026" },
     {
       big: "Jan 1, 2026",
       k: "AI losses excluded from cover",
-      d: "New ISO endorsements carve generative-AI losses out of standard liability policies. ISO forms underlie ~82% of U.S. P&C business.",
+      d: "New ISO endorsements carve generative-AI losses out of standard liability policies.",
       src: "Shumaker, Loop & Kendrick",
     },
   ];
@@ -121,17 +106,17 @@ function Problem() {
   const layers = [
     {
       t: "No insurance when you use someone else's agent",
-      d: "When a company's trading, payments or support agent handles your money and gets tricked, you carry the loss. No product covers it — and standard policies now exclude AI losses.",
+      d: "When a company's trading or payments agent handles your money and gets tricked, you carry the loss. Nothing covers it.",
       e: "e.g. an exchange's trading bot, a merchant's checkout agent",
     },
     {
       t: "The agent's key proves nothing",
-      d: "A manipulated agent signs whatever it's told with a perfectly valid key. \"The agent approved it\" can't be the basis for a payout — only a real human can.",
+      d: "A manipulated agent signs whatever it's told with a valid key. Only a real human can approve a payout.",
       e: "e.g. one Morse-coded message → valid, signed transfers",
     },
     {
       t: "Insurance can't see on-chain",
-      d: "AI-liability cover is broker-priced, takes weeks and is built for lawsuits. It can't verify what an agent did on-chain, so it can't pay the same day.",
+      d: "AI-liability cover is broker-priced, takes weeks and is built for lawsuits — it can't verify what an agent did.",
       e: "e.g. Klaimee, Armilla, Testudo — all off-chain",
     },
   ];
@@ -153,86 +138,119 @@ function Problem() {
   );
 }
 
+/** What we built: the product, not the mechanism. */
 function Solution() {
-  const steps = [
-    { k: "Publish", s: "ENS", d: `Buying cover mints agent1.${ENS_PARENT}. Its text records are the rules: per-tx cap, allowlist, coverage.` },
-    { k: "Enforce", s: "Uniswap v4", d: "SuretyHook checks every agent swap in beforeSwap and reverts the ones that break the rules." },
-    { k: "Record", s: "on-chain", d: "Plain transfers can't be blocked, so they're recorded. Over the cap or off the allowlist is arithmetic anyone can recompute." },
-    { k: "Verify", s: "World ID", d: "The policyholder passes a fresh World ID for Agents check — the same human bound to the policy at purchase." },
-    { k: "Pay", s: "hook reserve", d: "The claim is paid from the reserve inside the hook — same day, never to the attacker or the agent." },
+  const features = [
+    { t: "Cover in minutes", d: "Pick your agent's profile, set its rules, pay a premium computed live. Sybil-proof with World ID.", s: "insure" },
+    { t: "The policy is an ENS name", d: `Every policy is a public, non-transferable name like agent1.${ENS_PARENT}. Its records are the rules.`, s: "ENSv2" },
+    { t: "Rules enforced on-chain", d: "Our Uniswap v4 hook blocks any agent swap that breaks the published rules — before it executes.", s: "Uniswap v4" },
+    { t: "Violations detected automatically", d: "Every payment is recorded; a rule break is recomputed from public data. No adjuster.", s: "on-chain" },
+    { t: "Claims only a human can approve", d: "A fresh World ID check by the same person who bought the policy — a hijacked agent can't fake it.", s: "World ID" },
+    { t: "Paid the same day", d: "Verified claims are paid from a reserve held inside the hook, always kept at 2× coverage.", s: "reserve" },
   ];
   return (
     <div className="pitch-body">
-      <h2 className="pitch-h2">Enforce where you can. Insure what gets through.</h2>
-      <div className="pitch-flow">
-        {steps.map((s, i) => (
-          <div key={s.k} className="pitch-step">
-            <span className="pitch-num tnum">{i + 1}</span>
-            <b>{s.k}</b>
-            <span className="label">{s.s}</span>
-            <p>{s.d}</p>
+      <h2 className="pitch-h2">What we built: Surety, insurance for AI agents.</h2>
+      <div className="pitch-features">
+        {features.map((f, i) => (
+          <div key={f.t} className="pitch-card pitch-feature">
+            <div className="pitch-feature-head">
+              <span className="pitch-num tnum">{i + 1}</span>
+              <span className="label">{f.s}</span>
+            </div>
+            <h3>{f.t}</h3>
+            <p>{f.d}</p>
           </div>
         ))}
       </div>
-      <div className="pitch-compare">
-        <div>
-          <div className="label">without surety</div>
-          <code>private rules · bad swaps execute · stolen money is gone · the compromised key &quot;approves&quot;</code>
-        </div>
-        <div>
-          <div className="label">with surety</div>
-          <code>rules in ENS · bad swaps reverted · bad transfers claimable · a fresh human approves the payout</code>
-        </div>
-      </div>
     </div>
   );
 }
 
-function Architecture() {
+// ---------------------------------------------------------------- workflow
+
+const ICONS: Record<string, ReactNode> = {
+  pick: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <path d="M14 17.5h7M17.5 14v7" />
+    </svg>
+  ),
+  insure: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l7.5 3v5.5c0 4.5-3.2 8.3-7.5 9.5-4.3-1.2-7.5-5-7.5-9.5V6L12 3z" />
+      <path d="M8.8 12.2l2.2 2.2 4.4-4.6" />
+    </svg>
+  ),
+  run: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="7" width="16" height="12" rx="3" />
+      <path d="M12 3v4M9 12.5h.01M15 12.5h.01M9.5 16h5" />
+    </svg>
+  ),
+  attack: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3.5L2.8 19.5h18.4L12 3.5z" />
+      <path d="M12 10v4.5M12 17.2h.01" />
+    </svg>
+  ),
+  claim: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 3h7l4 4v14H7z" />
+      <path d="M14 3v4h4M10 12h5M10 16h5" />
+    </svg>
+  ),
+  pay: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M14.8 9.2c-.6-.8-1.6-1.2-2.8-1.2-1.7 0-2.8.9-2.8 2s1 1.7 2.8 2c1.8.3 2.8.9 2.8 2.1s-1.2 2-2.8 2c-1.2 0-2.3-.5-2.9-1.3M12 6.5v11" />
+    </svg>
+  ),
+};
+
+function Workflow() {
+  const steps = [
+    { icon: "pick", phase: "choose", t: "Pick an agent", d: "Payments, trading, invoices, payroll… with suggested rules and a live quote.", tag: "/agents" },
+    { icon: "insure", phase: "insure", t: "Buy cover", d: "Prove you're a unique human, enroll with World ID, pay the premium. The ENS policy is minted.", tag: "IDKit · World ID · ENS" },
+    { icon: "run", phase: "operate", t: "Agent works", d: "It pays and swaps from its vault, reading its rules from its ENS name.", tag: "AgentVault" },
+    { icon: "attack", phase: "attack", t: "Agent gets tricked", d: "Its swap is blocked by the hook. A plain transfer slips through — and is recorded.", tag: "Uniswap v4 hook", alert: true },
+    { icon: "claim", phase: "claim", t: "File the claim", d: "The violation is recomputed on-chain. The policyholder files in one transaction.", tag: "ViolationOracle" },
+    { icon: "pay", phase: "payout", t: "Get paid", d: "A fresh World ID check, then the reserve pays out. Same day.", tag: "World ID · reserve", end: true },
+  ];
   return (
     <div className="pitch-body">
-      <h2 className="pitch-h2">Architecture</h2>
-      <div className="pitch-arch">
-        <div className="pitch-col">
-          <div className="label">people & agents</div>
-          <Box t="Policyholder" d="buys cover · IDKit unique human · World ID for Agents at claim time" />
-          <Box t="AI payments agent" d="Groq LLM with its own key · reads its rules from ENS · pay / swap" />
-          <Box t="Backend" d="validates World ID · signs EIP-712 approvals · indexes events" />
+      <h2 className="pitch-h2">How it works, end to end</h2>
+      <div className="wf">
+        <div className="wf-rail" aria-hidden>
+          <span className="wf-pulse" />
         </div>
-        <div className="pitch-arrow">→</div>
-        <div className="pitch-col">
-          <div className="label">surety contracts · sepolia</div>
-          <Box t="PolicyRegistry" d="issues and prices the policy, mints its ENS name, checks the 2× reserve" strong />
-          <Box t="AgentVault" d="the agent's wallet: payments are recorded, swaps go through the hook" />
-          <Box t="SuretyHook" d="beforeSwap enforcement + the liquid reserve that pays claims" strong />
-          <Box t="ViolationOracle · ClaimRouter · WorldIdGate" d="recompute the breach → file → verify the human → pay" />
-        </div>
-        <div className="pitch-arrow">→</div>
-        <div className="pitch-col">
-          <div className="label">sponsor stacks</div>
-          <Box t="ENSv2" d="surety.eth registry · one PermissionedResolver per policy" logo="/logos/ens.svg" />
-          <Box t="Uniswap v4" d="PoolManager · WETH/MUSDC pool with SuretyHook" logo="/logos/uniswap.png" />
-          <Box t="World ID" d="World ID for Agents (fresh login) · IDKit (unique human)" logo="/logos/world.svg" />
-        </div>
+        {steps.map((s, i) => (
+          <div key={s.t} className={`wf-step ${s.alert ? "wf-alert" : ""} ${s.end ? "wf-end" : ""}`} style={{ animationDelay: `${i * 90}ms` }}>
+            <div className="wf-phase label">
+              <span className="tnum">{String(i + 1).padStart(2, "0")}</span> {s.phase}
+            </div>
+            <div className="wf-node">{ICONS[s.icon]}</div>
+            <div className="wf-card">
+              <b>{s.t}</b>
+              <p>{s.d}</p>
+              <span className="wf-tag">{s.tag}</span>
+            </div>
+          </div>
+        ))}
       </div>
-      <div className="pitch-invariants">
-        <span>claims pay only from the liquid reserve</span>
-        <span>reserve ≥ 2× total coverage</span>
-        <span>never pays the agent or the attacker</span>
-        <span>only a hash of the World ID on-chain</span>
+      <div className="wf-legend">
+        <span>
+          <i className="wf-dot" /> the happy path
+        </span>
+        <span>
+          <i className="wf-dot wf-dot-alert" /> where Surety steps in
+        </span>
+        <span>
+          <i className="wf-dot wf-dot-end" /> money back to the policyholder
+        </span>
       </div>
-    </div>
-  );
-}
-
-function Box({ t, d, strong, logo }: { t: string; d: string; strong?: boolean; logo?: string }) {
-  return (
-    <div className={`pitch-box ${strong ? "pitch-box-strong" : ""}`}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {logo && <Logo src={logo} size={17} />}
-        <b>{t}</b>
-      </div>
-      <span>{d}</span>
     </div>
   );
 }
@@ -247,9 +265,9 @@ function Unique() {
     ["Surety", Y, Y, Y, Y, "live formula"],
   ];
   const points = [
-    ["Enforcement defines the max loss", "The cap and allowlist in ENS are the numbers the hook enforces and the oracle checks."],
-    ["Priced from that enforcement", "Tighter rules unlock a cheaper tier, and the premium is computed live in front of the buyer."],
-    ["A human the agent can't forge", "A fresh World ID proof, bound to the buyer at purchase, gates every payout."],
+    ["Enforcement defines the max loss", "The rules in ENS are the numbers the hook enforces and the oracle checks."],
+    ["Priced from that enforcement", "Tighter rules unlock a cheaper tier, computed live."],
+    ["A human the agent can't forge", "A fresh World ID proof gates every single payout."],
   ];
   return (
     <div className="pitch-body">
@@ -289,53 +307,13 @@ function Unique() {
   );
 }
 
-function Live() {
-  const solvency = useSolvency();
-  const policies = useQuery({ queryKey: ["policies", "all"], queryFn: () => api.policies(), retry: 0 });
-  const list = policies.data ?? [];
-  const claims = list.flatMap((p) => p.claims);
-  const paid = claims.filter((c) => c.status === "Paid").reduce((a, c) => a + BigInt(c.amount), 0n);
-  const nums = [
-    { big: list.length ? String(list.length) : "…", k: "policies issued", d: list.map((p) => (p.label ? `${p.label}.${ENS_PARENT}` : "")).filter(Boolean).join(" · ") },
-    { big: claims.length ? String(claims.length) : "…", k: "claims filed", d: "each gated by a fresh World ID check" },
-    { big: claims.length ? `${usdc(paid)} USDC` : "…", k: "paid from the hook's reserve", d: "same-day, recomputable violations" },
-    { big: solvency.data?.ratio ? `${solvency.data.ratio.toFixed(0)}×` : "…", k: "reserve / coverage", d: "the contract requires ≥ 2×" },
-  ];
-  return (
-    <div className="pitch-center">
-      <div className="label">live on ethereum sepolia · read from the chain right now</div>
-      <div className="pitch-stats" style={{ marginTop: 22, width: "100%" }}>
-        {nums.map((n) => (
-          <div key={n.k} className="pitch-card">
-            <div className="pitch-big tnum">{n.big}</div>
-            <div className="pitch-k">{n.k}</div>
-            <p>{n.d}</p>
-          </div>
-        ))}
-      </div>
-      <p className="pitch-lede" style={{ marginTop: 34 }}>
-        We didn&apos;t script the attack. We tricked a real AI agent — the hook blocked its swap, the policy paid for its transfer.
-      </p>
-      <div style={{ display: "flex", gap: 10, marginTop: 22, flexWrap: "wrap", justifyContent: "center" }}>
-        <Link href="/demo" className="btn btn-signal">
-          Watch the live attack →
-        </Link>
-        <Link href="/agents" className="btn">
-          Insure an agent
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 const SLIDES: { title: string; render: () => ReactNode }[] = [
   { title: "Surety", render: () => <Intro /> },
   { title: "The numbers", render: () => <Stats /> },
   { title: "The problem", render: () => <Problem /> },
   { title: "The solution", render: () => <Solution /> },
-  { title: "Architecture", render: () => <Architecture /> },
+  { title: "Workflow", render: () => <Workflow /> },
   { title: "Why it's unique", render: () => <Unique /> },
-  { title: "Live", render: () => <Live /> },
 ];
 
 // ---------------------------------------------------------------- deck
