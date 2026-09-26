@@ -124,6 +124,14 @@ export interface AgentAction {
   revertReason?: string;
   error?: string;
 }
+export interface InboxMessage {
+  id: number;
+  from: string;
+  subject: string;
+  body: string;
+  receivedAt: number;
+  read: boolean;
+}
 /** Must match backend/src/routes/paymentsAgent.ts `sessionMessage` byte for byte. */
 export const agentSessionMessage = (node: string, address: string, issuedAt: string) =>
   `Surety: let the hosted payments agent act on my instructions\nPolicy: ${node}\nWallet: ${address}\nIssued: ${issuedAt}`;
@@ -191,6 +199,7 @@ export const api = {
     post<{ reply: string; actions: AgentAction[] }>("/api/payments-agent/chat", { token, messages }),
   /** Public: anyone (including an attacker) can message an agent. */
   agentInbox: (node: string, m: { from: string; subject: string; body: string }) => post<{ id: number }>(`/api/payments-agent/inbox/${node}`, m),
+  agentInboxList: (node: string) => req<InboxMessage[]>(`/api/payments-agent/inbox/${node}`),
   claim: (id: string) => req<{ status: ClaimStatus; vtype: Violation; amount: string; node: Hex; paymentId: string }>(`/api/claims/${id}`),
   demo: () => req<DemoInfo | null>("/api/demo"),
   agentStep: (step: "normal" | "swap" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),

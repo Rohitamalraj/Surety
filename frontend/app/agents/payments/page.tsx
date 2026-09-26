@@ -11,6 +11,7 @@ import { short, usdc } from "@/lib/format";
 import { PageHead, Pill, TxLink } from "@/components/ui";
 import { PoweredBy } from "@/components/PoweredBy";
 import { EnsVerify } from "@/components/EnsVerify";
+import { AgentInbox } from "@/components/AgentInbox";
 import { ATTACK_INSTRUCTION, ATTACKER, attackEmail } from "@/lib/attack";
 
 interface Turn {
@@ -113,6 +114,9 @@ export default function PaymentsAgentPage() {
             </div>
           )}
           <Console key={policy.node} policy={policy} address={address!} />
+          <div style={{ marginTop: 16 }}>
+            <AgentInbox node={policy.node} />
+          </div>
         </>
       )}
     </main>

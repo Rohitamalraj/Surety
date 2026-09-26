@@ -18,6 +18,7 @@ import { EventRow } from "@/components/EventRow";
 import { Pill } from "@/components/ui";
 import { Wordmark } from "@/components/Wordmark";
 import { TunnelHint } from "@/components/TunnelHint";
+import { AgentInbox } from "@/components/AgentInbox";
 
 /**
  * Attack Replay — the on-stage flow (PRD §23), in two separate pages: /demo drives the real LLM agent (a
@@ -480,6 +481,12 @@ function DemoInner({ mode }: { mode: Mode }) {
               ))
             )}
           </div>
+
+          {live && node && (
+            <div style={{ marginTop: 16 }}>
+              <AgentInbox node={node} compact />
+            </div>
+          )}
 
           {run.claimId && (
             <div style={{ marginTop: 16 }}>
