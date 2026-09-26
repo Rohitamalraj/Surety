@@ -1,16 +1,13 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Spline_Sans_Mono, Pixelify_Sans } from "next/font/google";
+import { Sora, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import "./surety.css";
 import { Providers } from "./providers";
 import { Header } from "@/components/Header";
-import { DitherArt } from "@/components/DitherArt";
 
-// Display grotesque (headings), terminal mono (all data), pixel accent (wordmark) —
-// the same three-face system as the reference.
-const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"], weight: ["400", "600", "700", "800"] });
-const mono = Spline_Sans_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500", "600"] });
-const pixel = Pixelify_Sans({ variable: "--font-pixel", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+// Sora for headings (geometric, confident), IBM Plex Mono for every number, address and label.
+const display = Sora({ variable: "--font-display", subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
+const mono = IBM_Plex_Mono({ variable: "--font-mono", subsets: ["latin"], weight: ["400", "500", "600"] });
 
 export const metadata: Metadata = {
   title: "Surety — insure the agent",
@@ -20,12 +17,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable} ${pixel.variable} h-full antialiased`}>
+    <html lang="en" className={`${display.variable} ${mono.variable} h-full antialiased`}>
       <body className="min-h-full">
-        {/* ambient dither behind everything: living paper grain */}
-        <div aria-hidden className="app-dither">
-          <DitherArt shape="field" gap={5} className="h-full w-full" />
-        </div>
         <Providers>
           <Header />
           {children}

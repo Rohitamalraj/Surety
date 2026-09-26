@@ -1,6 +1,6 @@
 /* =====================================================================
    Surety additions — same grammar as globals.css (mono labels, hairlines,
-   dither, lime signal used sparingly; red/green reserved for money and
+   blue accent used sparingly; red reserved for losses, holds and
    verdicts).
    ===================================================================== */
 
@@ -29,8 +29,8 @@
 .btn:disabled { opacity: 0.5; cursor: default; }
 .btn-primary { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .btn-primary:hover:not(:disabled) { color: var(--bg); background: color-mix(in oklch, var(--ink) 86%, var(--signal)); }
-.btn-signal { background: var(--signal); border-color: var(--signal); color: var(--dark); }
-.btn-signal:hover:not(:disabled) { color: var(--dark); border-color: var(--ink); }
+.btn-signal { background: var(--signal); border-color: var(--signal); color: var(--surface); }
+.btn-signal:hover:not(:disabled) { color: var(--surface); background: var(--accent-ink); border-color: var(--accent-ink); }
 .btn-danger { color: var(--loss); border-color: color-mix(in oklch, var(--loss) 45%, var(--line)); }
 .btn-danger:hover:not(:disabled) { color: var(--surface); background: var(--loss); border-color: var(--loss); }
 
@@ -98,7 +98,7 @@
   background: repeating-linear-gradient(0deg, transparent 0 2px, oklch(1 0 0 / 0.04) 2px 3px);
 }
 .console .c-dim { color: color-mix(in oklch, var(--dark-ink) 50%, transparent); }
-.console .c-ok { color: oklch(0.80 0.15 152); }
+.console .c-ok { color: oklch(0.78 0.13 245); }
 .console .c-bad { color: oklch(0.72 0.17 26); }
 .console .c-sig { color: var(--signal); }
 .console a { text-decoration: underline; text-underline-offset: 2px; }

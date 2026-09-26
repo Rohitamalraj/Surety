@@ -1,25 +1,28 @@
 @import "tailwindcss";
 
-/* Surety — design system ported from the KOLlateral reference: dither / 1-bit forensic. LIGHT: bone-white paper, near-black ink,
-   halftone dither as the surface voice, red/green only for money. Dark tokens are
-   kept (--dark*) for the high-contrast dithered illustration blocks. */
+/* Surety design system — "clearing house": cool paper, blueprint grid, ink type,
+   one insurance-blue accent. Red is reserved for losses, holds and violations;
+   blue carries verified / paid / within-policy. */
 :root {
-  --bg: oklch(0.975 0.001 250);
-  --bg-2: oklch(0.955 0.0015 250);
-  --surface: oklch(0.995 0.0005 250);
-  --surface-2: oklch(0.94 0.002 250);
-  --line: oklch(0.88 0.003 250);
-  --line-strong: oklch(0.74 0.005 250);
-  --ink: oklch(0.20 0.012 265);
-  --muted: oklch(0.46 0.009 265);
-  --faint: oklch(0.62 0.006 265);
-  --loss: oklch(0.53 0.20 26);
-  --gain: oklch(0.52 0.15 152);
-  --signal: oklch(0.80 0.20 132); /* lime phosphor accent, used sparingly */
-  /* dark inversion for dithered illustration blocks / footer */
-  --dark: oklch(0.17 0.01 265);
-  --dark-ink: oklch(0.96 0.003 250);
-  --radius: 3px;
+  --bg: oklch(0.982 0.004 255);
+  --bg-2: oklch(0.962 0.008 255);
+  --surface: oklch(0.997 0.002 255);
+  --surface-2: oklch(0.945 0.01 255);
+  --line: oklch(0.89 0.012 255);
+  --line-strong: oklch(0.76 0.02 255);
+  --ink: oklch(0.21 0.03 262);
+  --muted: oklch(0.47 0.025 262);
+  --faint: oklch(0.63 0.02 262);
+  --loss: oklch(0.55 0.2 25);
+  --gain: oklch(0.52 0.19 258); /* verified / paid — blue */
+  --signal: oklch(0.6 0.2 258); /* insurance blue — the one accent */
+  --signal-soft: oklch(0.93 0.04 255);
+  --tint: oklch(0.955 0.025 255); /* light blue panels for illustrations */
+  --accent-ink: oklch(0.38 0.14 260);
+  --dark: oklch(0.2 0.05 262); /* navy, for the console */
+  --dark-ink: oklch(0.96 0.01 255);
+  --radius: 10px;
+  --grid: oklch(0.52 0.12 258 / 0.06);
 }
 
 @theme inline {
@@ -34,59 +37,62 @@
   --color-signal: var(--signal);
   --font-display: var(--font-display);
   --font-mono: var(--font-mono);
-  --font-pixel: var(--font-pixel);
+  --font-pixel: var(--font-display);
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-/* ambient dither field fixed behind all content (subtle living paper grain) */
-.app-dither { position: fixed; inset: 0; z-index: -1; opacity: 0.18; pointer-events: none; }
-@media (prefers-reduced-motion: reduce) { .app-dither { opacity: 0.1; } }
 body {
-  background: var(--bg);
+  background-color: var(--bg);
   color: var(--ink);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 14px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  background-image: radial-gradient(oklch(0 0 0 / 0.028) 0.5px, transparent 0.6px);
-  background-size: 3px 3px;
+  /* blueprint grid */
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 48px 48px;
+  background-position: -1px -1px;
 }
 
 h1, h2, h3, h4 {
   font-family: var(--font-display), sans-serif;
-  font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; text-wrap: balance;
+  font-weight: 700; letter-spacing: -0.035em; line-height: 1.04; text-wrap: balance;
 }
 
-::selection { background: var(--signal); color: var(--dark); }
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+::selection { background: var(--signal); color: var(--surface); }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
 
-/* ---- terminal grammar ---- */
+/* ---- small caps labels, marked with a blue tick ---- */
 .label {
   font-family: var(--font-mono), monospace;
-  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
   color: var(--faint);
 }
+div.label:first-child::before, .eyebrow::before {
+  content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 8px;
+  background: var(--signal); border-radius: 2px; vertical-align: 0.05em;
+}
 .tnum { font-variant-numeric: tabular-nums; }
-.pixel { font-family: var(--font-pixel), var(--font-mono), monospace; }
-/* wordmark highlight: SURE in SURETY */
-.sure, .kol {
-  background: var(--signal);
-  color: var(--dark);
-  padding: 0 0.14em;
-  margin-right: 0.02em;
-  border-radius: 2px;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
+.pixel { font-family: var(--font-display), sans-serif; font-weight: 700; letter-spacing: -0.02em; }
+/* wordmark: a blue shield-mark + lowercase name */
+.sure {
+  display: inline-grid; place-items: center;
+  width: 1.15em; height: 1.15em; margin-right: 0.28em;
+  background: var(--signal); color: var(--surface);
+  border-radius: 0.32em 0.32em 0.55em 0.55em;
+  font-size: 0.8em; vertical-align: -0.12em;
 }
 .gain { color: var(--gain); }
 .loss { color: var(--loss); }
 
 /* ---- dither texture utilities ---- */
 .dither {
-  background-image: radial-gradient(oklch(0 0 0 / 0.5) 0.5px, transparent 0.6px);
+  background-image: radial-gradient(oklch(0.6 0.2 258 / 0.5) 0.5px, transparent 0.6px);
   background-size: 4px 4px;
 }
 /* sponsor logos rendered as halftone-dithered silhouettes (logo used as a mask
@@ -115,33 +121,15 @@ h1, h2, h3, h4 {
 @media (prefers-reduced-motion: reduce) { .tw-caret { animation: none; } }
 .sponsor {
   display: inline-block;
-  background-color: transparent;
-  /* two dot layers at slightly different pitches drift in opposite directions,
-     so the logo reads as living dither grain rather than a static halftone */
-  background-image:
-    radial-gradient(var(--ink) 0.72px, transparent 0.82px),
-    radial-gradient(var(--ink) 0.5px, transparent 0.6px);
-  background-size: 2.6px 2.6px, 5px 5px;
+  background-color: var(--ink);
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
   -webkit-mask-position: center; mask-position: center;
   -webkit-mask-size: contain; mask-size: contain;
-  opacity: 0.9;
-  animation: sponsorDrift 3.6s linear infinite;
-  transition: background-color 0.2s var(--ease-out-quart), opacity 0.2s;
+  opacity: 0.55;
+  transition: background-color 0.2s var(--ease-out-quart), opacity 0.2s, transform 0.2s var(--ease-out-quart);
 }
-.sponsor:hover {
-  background-image: none;
-  background-color: var(--ink);
-  opacity: 1;
-  animation: none;
-}
-@media (prefers-reduced-motion: reduce) { .sponsor { animation: none; } }
+.sponsor:hover { background-color: var(--signal); opacity: 1; transform: translateY(-2px); }
 .scan { position: relative; }
-.scan::after {
-  content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: repeating-linear-gradient(0deg, transparent 0 2px, oklch(0 0 0 / 0.16) 2px 3px);
-  mix-blend-mode: multiply; opacity: 0.5;
-}
 
 /* ---- surfaces ---- */
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
