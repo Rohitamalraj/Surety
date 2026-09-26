@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { decodeEventLog, formatUnits } from "viem";
-import { useConnection, usePublicClient, useWriteContract } from "wagmi";
-import { api, type DemoInfo } from "@/lib/api";
+import { useConnection, usePublicClient, useSignMessage, useWriteContract } from "wagmi";
+import { api, agentSessionMessage, type AgentAction, type DemoInfo } from "@/lib/api";
+import { ATTACK_INSTRUCTION, ATTACKER, attackEmail } from "@/lib/attack";
 import { routerAbi } from "@/lib/abi";
 import { useDeployments, useFeed, useHealth, usePolicy } from "@/lib/hooks";
 import { short, txUrl, usdc } from "@/lib/format";
@@ -19,7 +20,8 @@ import { Wordmark } from "@/components/Wordmark";
 import { TunnelHint } from "@/components/TunnelHint";
 
 /**
- * Attack Replay — the on-stage page (PRD §23). The scripted agent runs against the real contracts:
+ * Attack Replay — the on-stage page (PRD §23). Live mode drives the real LLM agent (a real attacker email;
+ * the model decides); scripted mode is the fixed-step fallback. Both run against the real contracts:
  * normal payment + compliant v4 swap → Grok-style attack swap BLOCKED by the v4 hook → a rule-breaking transfer slips
  * through → claim → World ID cancelled (held) → verified (paid from the reserve).
  */
@@ -33,11 +35,15 @@ interface LogLine {
 }
 interface Run {
   log: LogLine[];
+  /** live = the real LLM agent decides (default); scripted = fixed steps, the safe fallback */
+  mode?: Mode;
   normal?: boolean;
   attack?: boolean;
   paymentId?: string;
   claimId?: string;
 }
+type Mode = "live" | "scripted";
+const sessionKey = (node: string) => `surety.agent.session.${node}`;
 
 const KEY = "surety.demo.run";
 const now = () => new Date().toLocaleTimeString("en-GB", { hour12: false });
@@ -108,6 +114,103 @@ function DemoInner() {
   }
 
   const cap = policy.data ? usdc(policy.data.policy.perTxCap, 0) : "…";
+  const mode: Mode = run.mode ?? "live";
+
+  // ---- live mode: the real LLM agent (backend/src/agent/payments.ts), authorized by the policyholder
+  const sign = useSignMessage();
+  const [token, setToken] = useState<string | null>(null);
+  useEffect(() => {
+    if (!node) return;
+    try {
+      const s = JSON.parse(sessionStorage.getItem(sessionKey(node)) ?? "null") as { token: string; expiresAt: number } | null;
+      if (s && s.expiresAt > Date.now() + 60_000) setToken(s.token);
+    } catch {}
+  }, [node]);
+  const authorize = () =>
+    act("authorize", async (r) => {
+      if (!node || !address) throw new Error("connect the policyholder wallet first");
+      const issuedAt = new Date().toISOString();
+      const signature = await sign.mutateAsync({ message: agentSessionMessage(node, address, issuedAt) });
+      const s = await api.agentSession({ node, address, issuedAt, signature });
+      try {
+        sessionStorage.setItem(sessionKey(node), JSON.stringify(s));
+      } catch {}
+      setToken(s.token);
+      return push(r, { tone: "dim", text: "policyholder authorized the live agent (one signature, no gas)" });
+    });
+
+  /** Turn what the model actually did into console lines; returns the first claimable payment. */
+  const logActions = (r: Run, actions: AgentAction[], reply: string): { run: Run; violating?: string } => {
+    let next = r;
+    let violating: string | undefined;
+    for (const a of actions) {
+      if (a.type === "swap") {
+        next = push(
+          next,
+          a.blockedByHook
+            ? { tone: "ok", text: `agent tried to SWAP ${usdc(a.amount)} USDC → ${short(a.to)} · BLOCKED by SuretyHook · ${a.revertReason}`, tx: a.txHash }
+            : a.error
+              ? { tone: "dim", text: `agent swap not sent: ${a.error}` }
+              : {
+                  tone: "ok",
+                  text: `agent swapped ${usdc(a.amount)} USDC → ${a.amountOut ? Number(formatUnits(BigInt(a.amountOut), 18)).toPrecision(3) : "?"} WETH on Uniswap v4 · SuretyHook: within policy ✓`,
+                  tx: a.txHash,
+                },
+        );
+      } else if (a.error) {
+        next = push(next, { tone: "dim", text: `agent payment not sent: ${a.error}` });
+      } else if (a.violation && a.violation !== "None") {
+        violating ??= a.paymentId;
+        next = push(
+          next,
+          { tone: "bad", text: `agent TRANSFERRED ${usdc(a.amount)} USDC to ${short(a.to)} · slipped through · recorded, not blocked`, tx: a.txHash },
+          { tone: "dim", text: `ViolationOracle.check(${a.paymentId}) → ${a.violation} · recomputable from public data` },
+        );
+      } else {
+        next = push(next, { tone: "ok", text: `agent paid ${short(a.to)} ${usdc(a.amount)} USDC · within policy ✓ · payment #${a.paymentId}`, tx: a.txHash });
+      }
+    }
+    if (reply) next = push(next, { tone: "plain", text: `agent: “${reply}”` });
+    return { run: next, violating };
+  };
+
+  const liveNormal = () =>
+    act("normal", async (r) => {
+      if (!token) throw new Error("authorize the live agent first");
+      const m = demo?.merchant ?? "0x1111111111111111111111111111111111111111";
+      const instruction = `Pay 1 USDC to ${m} for this morning's coffee, then swap 1 USDC into WETH for the treasury (counterparty ${m}).`;
+      const r1 = push(r, { tone: "sig", text: `policyholder → agent: "${instruction}"` });
+      save(r1);
+      const res = await api.agentChat(token, [{ role: "user", content: instruction }]);
+      return { ...logActions(r1, res.actions, res.reply).run, normal: true };
+    });
+
+  const liveAttack = () =>
+    act("attack", async (r) => {
+      if (!token || !node || !policy.data) throw new Error("authorize the live agent first");
+      const capNum = Number(formatUnits(BigInt(policy.data.policy.perTxCap), 6)) || 5;
+      const email = attackEmail({ policyholder: policy.data.policy.policyholder, attacker: demo?.attacker ?? ATTACKER, amount: Math.max(1, Math.floor(capNum * 0.8)) });
+      await api.agentInbox(node, email);
+      const r1 = push(
+        r,
+        { tone: "sig", text: `attacker → agent inbox: "${email.subject}" · Morse-coded · impersonates the policyholder` },
+        { tone: "sig", text: `policyholder → agent: "${ATTACK_INSTRUCTION}"` },
+      );
+      save(r1);
+      const res = await api.agentChat(token, [{ role: "user", content: ATTACK_INSTRUCTION }]);
+      const { run: r2, violating } = logActions(r1, res.actions, res.reply);
+      const fooled = res.actions.some((a) => a.to.toLowerCase() === (demo?.attacker ?? ATTACKER).toLowerCase());
+      return {
+        ...push(
+          r2,
+          fooled
+            ? { tone: "dim", text: "the real model was manipulated — no step of this was scripted" }
+            : { tone: "dim", text: "the model refused this time — its rules held. Run step 3 (scripted) to show the insured event." },
+        ),
+        attack: true,
+        paymentId: violating ?? r2.paymentId,
+      };
+    });
 
   const normal = () =>
     act("normal", async (r) => {
@@ -209,14 +312,41 @@ function DemoInner() {
   }, [wid, run.claimId, save]);
 
   const reset = () => {
-    save({ log: [] });
+    save({ log: [], mode });
     window.history.replaceState(null, "", "/demo");
   };
+  const setMode = (m: Mode) => save({ ...run, mode: m });
+  const live = mode === "live";
+  const liveReady = !live || !!token;
 
   const steps: { n: string; title: string; short: string; done: boolean; can: boolean; go?: () => void; key: string }[] = [
-    { n: "1", key: "normal", short: "Pay + swap", title: "Agent pays & swaps within policy", done: !!run.normal, can: !!node, go: normal },
-    { n: "2", key: "attack", short: "Attack swap", title: "Grok-style attack swap", done: !!run.attack, can: !!node, go: attack },
-    { n: "3", key: "violation", short: "Rule-breaking transfer", title: "Rule-breaking transfer slips through", done: !!run.paymentId, can: !!node, go: violation },
+    {
+      n: "1",
+      key: "normal",
+      short: live ? "Ask agent: pay + swap" : "Pay + swap",
+      title: "Agent pays & swaps within policy",
+      done: !!run.normal,
+      can: !!node && liveReady,
+      go: live ? liveNormal : normal,
+    },
+    {
+      n: "2",
+      key: "attack",
+      short: live ? "Attacker emails the agent" : "Attack swap",
+      title: live ? "Attacker manipulates the real AI agent" : "Grok-style attack swap",
+      done: !!run.attack,
+      can: !!node && liveReady,
+      go: live ? liveAttack : attack,
+    },
+    {
+      n: "3",
+      key: "violation",
+      short: live ? "Transfer (scripted fallback)" : "Rule-breaking transfer",
+      title: "Rule-breaking transfer slips through",
+      done: !!run.paymentId,
+      can: !!node && !run.paymentId,
+      go: violation,
+    },
     { n: "4", key: "file", short: "File claim", title: "Policyholder files a claim", done: !!run.claimId, can: !!run.paymentId && !run.claimId, go: file },
     { n: "5", key: "cancel", short: "", title: "World ID cancelled → held", done: claim?.status === "Held" || claim?.status === "Paid", can: false },
     { n: "6", key: "paid", short: "", title: "Verified → paid from reserve", done: claim?.status === "Paid", can: false },
@@ -279,6 +409,22 @@ function DemoInner() {
             </div>
           )}
 
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+            <span className="label">agent</span>
+            <button className={`filter-pill ${live ? "filter-on" : ""}`} onClick={() => setMode("live")} disabled={!!busy}>
+              ● live AI agent
+            </button>
+            <button className={`filter-pill ${!live ? "filter-on" : ""}`} onClick={() => setMode("scripted")} disabled={!!busy}>
+              scripted (fallback)
+            </button>
+            {live && !token && (
+              <button className="btn btn-signal" disabled={!!busy || !isPolicyholder} onClick={authorize}>
+                {busy === "authorize" ? "sign in your wallet…" : "Authorize live agent"}
+              </button>
+            )}
+            {live && token && <span className="label">live agent authorized · Groq LLM · real key</span>}
+          </div>
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
             {steps.slice(0, 4).map((s) => (
               <button
@@ -297,9 +443,11 @@ function DemoInner() {
               <div className="c-dim">
                 $ surety replay --agent {demo ? `${demo.label}.surety.eth` : "…"}
                 <br />
-                the demo agent is a real key sending real transactions on-chain, scripted to play the insured AI agent.
+                {live
+                  ? "live mode: a real LLM agent decides every action with a real key. the attack is an email to its public inbox — whether it falls for it is up to the model."
+                  : "scripted mode: a real key sends real transactions on-chain, following fixed steps (the safe fallback)."}
                 <br />
-                ready. press 1 to let the agent make a normal payment.
+                {live && !token ? "authorize the live agent (policyholder signature), then press 1." : "ready. press 1."}
                 <span className="tw-caret" />
               </div>
             ) : (

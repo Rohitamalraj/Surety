@@ -111,13 +111,17 @@ export interface ChatMessage {
   content: string;
 }
 export interface AgentAction {
-  type: "pay";
+  type: "pay" | "swap";
   to: Address;
   amount: string;
   memo?: string;
   txHash?: Hex;
   paymentId?: string;
   violation?: Violation;
+  /** swap only */
+  amountOut?: string;
+  blockedByHook?: boolean;
+  revertReason?: string;
   error?: string;
 }
 /** Must match backend/src/routes/paymentsAgent.ts `sessionMessage` byte for byte. */
@@ -185,6 +189,8 @@ export const api = {
     post<{ token: string; expiresAt: number }>("/api/payments-agent/session", b),
   agentChat: (token: string, messages: ChatMessage[]) =>
     post<{ reply: string; actions: AgentAction[] }>("/api/payments-agent/chat", { token, messages }),
+  /** Public: anyone (including an attacker) can message an agent. */
+  agentInbox: (node: string, m: { from: string; subject: string; body: string }) => post<{ id: number }>(`/api/payments-agent/inbox/${node}`, m),
   claim: (id: string) => req<{ status: ClaimStatus; vtype: Violation; amount: string; node: Hex; paymentId: string }>(`/api/claims/${id}`),
   demo: () => req<DemoInfo | null>("/api/demo"),
   agentStep: (step: "normal" | "swap" | "attack-swap" | "violation", node?: string) => post<StepResult>("/api/agent/step", { step, node }),
