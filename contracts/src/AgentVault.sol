@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {IUnlockCallback} from "v4-core/src/interfaces/callback/IUnlockCallback.sol";
@@ -20,12 +21,23 @@ import {Payment, PolicyRecord} from "./interfaces/SuretyTypes.sol";
 /// `swap()` calls Uniswap v4's `PoolManager` *directly* (implementing `IUnlockCallback` itself) rather
 /// than through the shared `PoolSwapTest` router: `SuretyHook.beforeSwap`'s `sender` check only works
 /// because `sender` is whoever calls `PoolManager.swap()` directly — see docs/ARCHITECTURE.md#uniswap.
-contract AgentVault is IAgentVault, IUnlockCallback {
+///
+/// `swap()` only accepts the one owner-pinned `canonicalPoolKey` — without this, an agent (or anything
+/// that can call `swap`) could pass an arbitrary `PoolKey` with `hooks: address(0)` or any hook other
+/// than `SuretyHook`, moving funds through a pool that never runs `beforeSwap` at all and skipping
+/// enforcement entirely. Found by the adversarial fork tests in `contracts/test/fork/` — see
+/// docs/ARCHITECTURE.md#uniswap.
+contract AgentVault is IAgentVault, IUnlockCallback, Ownable {
     using SafeERC20 for IERC20;
 
     IPolicyRegistry public immutable registry;
     IERC20 public immutable usdc;
     IPoolManager public immutable poolManager;
+
+    /// @notice The only pool `swap()` will route through — set once by the owner after the real pool
+    /// is initialized (PRD §15.9 step 9, after AgentVault is already deployed at step 4).
+    PoolKey public canonicalPoolKey;
+    bool public canonicalPoolKeySet;
 
     mapping(bytes32 => uint256) internal _balances;
     Payment[] internal _payments;
@@ -38,6 +50,7 @@ contract AgentVault is IAgentVault, IUnlockCallback {
     }
 
     event SwapExecuted(bytes32 indexed node, uint256 amountIn, uint256 amountOut);
+    event CanonicalPoolSet(bytes32 poolId);
 
     error NotAgent(bytes32 node, address caller);
     error NotPolicyholder(bytes32 node, address caller);
@@ -46,11 +59,24 @@ contract AgentVault is IAgentVault, IUnlockCallback {
     error PoolNotUsdcPaired();
     error InvalidPaymentId(uint256 paymentId);
     error NotPoolManager(address caller);
+    error CanonicalPoolNotSet();
+    error UnauthorizedPool();
+    error UnexpectedPositiveUsdcDelta();
 
-    constructor(IPolicyRegistry _registry, IERC20 _usdc, IPoolManager _poolManager) {
+    constructor(IPolicyRegistry _registry, IERC20 _usdc, IPoolManager _poolManager, address _owner)
+        Ownable(_owner)
+    {
         registry = _registry;
         usdc = _usdc;
         poolManager = _poolManager;
+    }
+
+    /// @notice Owner-only, post-deploy wiring: the one pool `swap()` is allowed to use. Pins currencies,
+    /// fee, tick spacing, and — critically — the hook, so nothing can substitute an unprotected pool.
+    function setCanonicalPool(PoolKey calldata key) external onlyOwner {
+        canonicalPoolKey = key;
+        canonicalPoolKeySet = true;
+        emit CanonicalPoolSet(keccak256(abi.encode(key)));
     }
 
     /// @inheritdoc IAgentVault
@@ -89,20 +115,29 @@ contract AgentVault is IAgentVault, IUnlockCallback {
     function swap(bytes32 node, PoolKey calldata key, SwapParams calldata params, address counterparty) external {
         PolicyRecord memory policy = registry.getPolicy(node);
         if (msg.sender != policy.agent) revert NotAgent(node, msg.sender);
+        if (!canonicalPoolKeySet) revert CanonicalPoolNotSet();
+        if (keccak256(abi.encode(key)) != keccak256(abi.encode(canonicalPoolKey))) revert UnauthorizedPool();
 
-        uint256 amountIn = _usdcAmountIn(key, params);
-        if (_balances[node] < amountIn) revert InsufficientBalance(node, amountIn, _balances[node]);
-        _balances[node] -= amountIn;
+        // Upper bound only — a price-limited swap can partially fill and settle less than requested.
+        // The actual debit below always uses what was really spent, never this requested amount.
+        uint256 requestedIn = _usdcAmountIn(key, params);
+        if (_balances[node] < requestedIn) revert InsufficientBalance(node, requestedIn, _balances[node]);
 
         bytes memory hookData = abi.encode(node, counterparty);
         bytes memory result = poolManager.unlock(abi.encode(SwapCallbackData(node, key, params, hookData)));
         BalanceDelta delta = abi.decode(result, (BalanceDelta));
 
         bool usdcIsToken0 = Currency.unwrap(key.currency0) == address(usdc);
+        int128 usdcDelta = usdcIsToken0 ? delta.amount0() : delta.amount1();
+        if (usdcDelta > 0) revert UnexpectedPositiveUsdcDelta();
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint256 actualIn = uint256(uint128(-usdcDelta)); // guarded by the `> 0` check above
+        _balances[node] -= actualIn;
+
         int128 outputDelta = usdcIsToken0 ? delta.amount1() : delta.amount0();
         // forge-lint: disable-next-line(unsafe-typecast)
         uint256 amountOut = outputDelta > 0 ? uint256(uint128(outputDelta)) : 0; // guarded by the `> 0` check
-        emit SwapExecuted(node, amountIn, amountOut);
+        emit SwapExecuted(node, actualIn, amountOut);
     }
 
     /// @inheritdoc IUnlockCallback

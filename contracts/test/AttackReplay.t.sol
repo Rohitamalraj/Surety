@@ -83,15 +83,17 @@ contract AttackReplayTest is Deployers {
         );
         require(address(hook) == hookAddress, "hook address mismatch");
 
-        vault = new AgentVault(IPolicyRegistry(address(registry)), usdc, manager);
+        vault = new AgentVault(IPolicyRegistry(address(registry)), usdc, manager, address(this));
 
         registry.setHook(hook);
+        registry.setAgentVault(address(vault));
         hook.setAgentVault(address(vault));
 
         (Currency c0, Currency c1) = address(usdc) < address(weth)
             ? (Currency.wrap(address(usdc)), Currency.wrap(address(weth)))
             : (Currency.wrap(address(weth)), Currency.wrap(address(usdc)));
         (poolKey,) = initPoolAndAddLiquidity(c0, c1, hook, 3000, SQRT_PRICE_1_1);
+        vault.setCanonicalPool(poolKey);
 
         // Backers fund the reserve *before* any policy is issued (PRD invariant #2 / TEAM_PLAN's
         // SeedDemo order) — premiums alone can never reach 2x coverage.

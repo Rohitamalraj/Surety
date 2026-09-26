@@ -39,6 +39,7 @@ contract PolicyRegistryTest is Test {
             ensRegistry, verifiableFactory, address(0xD00D) /* impl, unused by mock factory */, gate, usdc, "surety", address(this)
         );
         registry.setHook(hook);
+        registry.setAgentVault(address(0xFEED0000));
 
         usdc.mint(policyholder, 1_000_000e6);
         vm.prank(policyholder);

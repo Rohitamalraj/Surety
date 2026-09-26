@@ -43,14 +43,22 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
     bytes32 public immutable parentNode;
     string public parentLabel;
 
-    /// @notice Wired post-deploy: SuretyHook and ClaimRouter are deployed after this contract per PRD
-    /// §15.9's deploy order, so neither address is known at construction time.
+    /// @notice Wired post-deploy: AgentVault, SuretyHook and ClaimRouter are deployed after this
+    /// contract per PRD §15.9's deploy order, so none of their addresses are known at construction time.
     ISuretyHook public hook;
     address public claimRouter;
+    address public agentVault;
 
     uint256 internal _totalCoverage;
     mapping(bytes32 => PolicyRecord) internal _policies;
     mapping(bytes32 => mapping(address => bool)) internal _allowlist;
+    /// @dev Per-policy resolver + its DNS-encoded name, so `recordPayout` can publish
+    /// `surety.status = "exhausted"` on the same real resolver `issuePolicy` wrote to — without this,
+    /// ENS would keep publishing "active" forever (found by the adversarial fork tests; see
+    /// docs/ARCHITECTURE.md#ens). `PolicyRecord` itself is the locked shared struct and has no room for
+    /// this — it isn't ours to extend without a sync-point.
+    mapping(bytes32 => address) internal _resolvers;
+    mapping(bytes32 => bytes) internal _dnsNames;
 
     error ZeroAddress();
     error InvalidParams();
@@ -60,6 +68,7 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
     error NotAgent(bytes32 node, address caller);
     error NotClaimRouter(address caller);
     error HookNotSet();
+    error AgentVaultNotSet();
 
     /// @notice Not part of the locked IPolicyRegistry API — lets the indexer/frontend discover each
     /// policy's per-policy resolver proxy without re-deriving it or querying ENS.
@@ -103,6 +112,14 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
         claimRouter = _claimRouter;
     }
 
+    /// @notice The published `addr` record for every future policy is this contract's address (PRD
+    /// §10.3: "addr | AgentVault address"), not the agent's own EOA — that's where counterparties
+    /// actually send funds. AgentVault is deployed after PolicyRegistry, so this is set post-deploy.
+    function setAgentVault(address _agentVault) external onlyOwner {
+        if (_agentVault == address(0)) revert ZeroAddress();
+        agentVault = _agentVault;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // IPolicyRegistry
     ////////////////////////////////////////////////////////////////////////
@@ -113,6 +130,7 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
         returns (bytes32 node)
     {
         if (address(hook) == address(0)) revert HookNotSet();
+        if (agentVault == address(0)) revert AgentVaultNotSet();
         if (p.payoutAddr == address(0) || p.agent == address(0)) revert ZeroAddress();
         if (p.perTxCap > p.coverageLimit) revert InvalidParams();
         if (!PricingEngine.satisfiesTierBounds(p.tier, p.coverageLimit, p.perTxCap, p.allowlist.length)) {
@@ -166,14 +184,27 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
     }
 
     /// @inheritdoc IPolicyRegistry
+    /// @dev Bounds `amount` at the policy's own remaining coverage rather than trusting the caller's
+    /// figure outright: `ClaimRouter` is expected to already apply `min(amount, coverageLimit -
+    /// paidOut)` (PRD §15.8 R-CR-2), but a bug or compromise there must not be able to push one
+    /// policy's `paidOut` past its own `coverageLimit` — doing so would silently corrupt
+    /// `_totalCoverage`, the shared 2x-reserve invariant every other policyholder's safety margin
+    /// depends on. Found by the adversarial fork tests; see docs/ARCHITECTURE.md#ens.
     function recordPayout(bytes32 node, uint256 amount) external {
         if (msg.sender != claimRouter) revert NotClaimRouter(msg.sender);
         PolicyRecord storage policy = _policies[node];
-        policy.paidOut += amount;
+        uint256 remaining = policy.coverageLimit - policy.paidOut;
+        uint256 bounded = amount > remaining ? remaining : amount;
+
+        policy.paidOut += bounded;
         policy.claimsCount += 1;
-        _totalCoverage -= amount;
+        _totalCoverage -= bounded;
         if (policy.paidOut >= policy.coverageLimit) {
             policy.active = false;
+            address resolver = _resolvers[node];
+            if (resolver != address(0)) {
+                IEnsPermissionedResolver(resolver).setText(_dnsNames[node], "surety.status", "exhausted");
+            }
             emit PolicyExhausted(node);
         }
     }
@@ -217,8 +248,10 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
         bytes memory initData =
             abi.encodeCall(IEnsResolverInitializable.initialize, (grants, new bytes[](0)));
         resolverProxy = verifiableFactory.deployProxy(permissionedResolverImpl, uint256(node), initData);
+        _resolvers[node] = resolverProxy;
 
         bytes memory dnsName = _dnsEncode(p.label);
+        _dnsNames[node] = dnsName;
         IEnsPermissionedResolver resolver = IEnsPermissionedResolver(resolverProxy);
         resolver.multicall(_buildRecordCalls(dnsName, p, premium));
         resolver.grantSetterRoles(abi.encodeCall(resolver.setText, (dnsName, "surety.streak", "")), p.agent);
@@ -252,7 +285,7 @@ contract PolicyRegistry is IPolicyRegistry, Ownable {
         calls[7] = abi.encodeCall(IEnsPermissionedResolver.setText, (dnsName, "surety.status", "active"));
         calls[8] = abi.encodeCall(
             IEnsPermissionedResolver.setAddress,
-            (dnsName, EnsRoles.COIN_TYPE_ETH, abi.encodePacked(p.agent))
+            (dnsName, EnsRoles.COIN_TYPE_ETH, abi.encodePacked(agentVault))
         );
     }
 

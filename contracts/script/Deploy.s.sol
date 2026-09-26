@@ -106,7 +106,7 @@ contract Deploy is Script {
 
         // 4. AgentVault(registry, usdc)
         d.vault = new AgentVault(
-            IPolicyRegistry(address(d.registry)), IERC20(address(d.usdc)), IPoolManager(cfg.poolManager)
+            IPolicyRegistry(address(d.registry)), IERC20(address(d.usdc)), IPoolManager(cfg.poolManager), cfg.deployer
         );
 
         // 5. SuretyHook via HookMiner(poolManager, registry, usdc)
@@ -114,6 +114,7 @@ contract Deploy is Script {
 
         // 8. wire roles: registry<->hook, vault<->hook (router<->hook/registry deferred — see above)
         d.registry.setHook(d.hook);
+        d.registry.setAgentVault(address(d.vault));
         d.hook.setAgentVault(address(d.vault));
         if (cfg.claimRouter != address(0)) {
             d.registry.setClaimRouter(cfg.claimRouter);
@@ -143,6 +144,9 @@ contract Deploy is Script {
             : (Currency.wrap(cfg.weth), Currency.wrap(address(d.usdc)));
         PoolKey memory poolKey = PoolKey({currency0: c0, currency1: c1, fee: 3000, tickSpacing: 60, hooks: d.hook});
         IPoolManager(cfg.poolManager).initialize(poolKey, Constants.SQRT_PRICE_1_1);
+        // Pin AgentVault.swap to exactly this pool — see AgentVault.sol's own header for why an
+        // unpinned pool argument would let enforcement be skipped entirely.
+        d.vault.setCanonicalPool(poolKey);
     }
 
     // 10. write deployments/sepolia.json

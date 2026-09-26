@@ -40,7 +40,7 @@ contract AgentVaultTest is Deployers {
         weth.approve(address(modifyLiquidityRouter), type(uint256).max);
 
         registryMock = new MockPolicyRegistry();
-        vault = new AgentVault(IPolicyRegistry(address(registryMock)), usdc, manager);
+        vault = new AgentVault(IPolicyRegistry(address(registryMock)), usdc, manager, address(this));
 
         PolicyRecord memory rec;
         rec.policyholder = policyholder;
@@ -56,6 +56,7 @@ contract AgentVaultTest is Deployers {
             ? (Currency.wrap(address(usdc)), Currency.wrap(address(weth)))
             : (Currency.wrap(address(weth)), Currency.wrap(address(usdc)));
         (poolKey,) = initPoolAndAddLiquidity(c0, c1, IHooks(address(0)), 3000, SQRT_PRICE_1_1);
+        vault.setCanonicalPool(poolKey);
     }
 
     ////////////////////////////////////////////////////////////////////////

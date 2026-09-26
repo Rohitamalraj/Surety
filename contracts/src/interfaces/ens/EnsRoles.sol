@@ -12,8 +12,12 @@ pragma solidity ^0.8.26;
 /// someone else at any resource — see `EnhancedAccessControl._getSettableRoles`.
 library EnsRoles {
     // ---- PermissionedRegistry (registry-level roles) ----
+    uint256 internal constant ROLE_REGISTRAR = 1 << 0;
+    uint256 internal constant ROLE_REGISTRAR_ADMIN = ROLE_REGISTRAR << 128;
     uint256 internal constant ROLE_SET_SUBREGISTRY = 1 << 20;
+    uint256 internal constant ROLE_SET_SUBREGISTRY_ADMIN = ROLE_SET_SUBREGISTRY << 128;
     uint256 internal constant ROLE_SET_RESOLVER = 1 << 24;
+    uint256 internal constant ROLE_SET_RESOLVER_ADMIN = ROLE_SET_RESOLVER << 128;
     uint256 internal constant ROLE_CAN_TRANSFER_ADMIN = (1 << 28) << 128;
 
     // ---- PermissionedResolver (resolver-level roles) ----
