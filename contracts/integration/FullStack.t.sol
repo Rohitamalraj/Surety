@@ -94,9 +94,10 @@ contract FullStackTest is Deployers {
             HookMiner.find(address(this), uint160(Hooks.BEFORE_SWAP_FLAG), type(SuretyHook).creationCode, args);
         hook = new SuretyHook{salt: salt}(manager, IPolicyRegistry(address(registry)), IERC20(address(usdc)), deployer);
         require(address(hook) == want, "hook address");
-        vault = new AgentVault(IPolicyRegistry(address(registry)), usdc, manager);
+        vault = new AgentVault(IPolicyRegistry(address(registry)), usdc, manager, deployer);
         vm.startPrank(deployer);
         registry.setHook(hook);
+        registry.setAgentVault(address(vault));
         hook.setAgentVault(address(vault));
         vm.stopPrank();
     }
