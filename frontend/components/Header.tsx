@@ -42,21 +42,21 @@ export function Header() {
         display: "flex",
         flexWrap: "wrap",
         alignItems: "center",
-        gap: 16,
-        padding: "10px 24px",
+        gap: "12px 24px",
+        padding: "14px 32px",
         borderBottom: "1px solid var(--line)",
         background: "color-mix(in oklch, var(--bg) 80%, transparent)",
         backdropFilter: "blur(8px)",
       }}
     >
-      <Link href="/" style={{ marginRight: 8 }}>
+      <Link href="/" style={{ marginRight: 28, flexShrink: 0 }}>
         <Wordmark />
       </Link>
-      <nav style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+      <nav style={{ display: "flex", alignItems: "center", gap: "10px 30px", flexWrap: "wrap" }}>
         {NAV.map(([href, label]) => {
           const on = href === activeHref(pathname);
           return (
-            <Link key={href} href={href} className="link label" style={{ fontSize: 11, color: on ? "var(--ink)" : undefined }}>
+            <Link key={href} href={href} className="link label" style={{ fontSize: 11, padding: "6px 0", whiteSpace: "nowrap", color: on ? "var(--ink)" : undefined }}>
               {on && <span style={{ color: "var(--signal)" }}>▸ </span>}
               {label}
             </Link>
@@ -64,7 +64,7 @@ export function Header() {
         })}
       </nav>
 
-      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 12 }}>
         <ThemeToggle />
         <NetworkBadge />
         {mounted ? <WalletButton /> : <span className="label flick">wallet…</span>}
