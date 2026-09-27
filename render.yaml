@@ -1,0 +1,54 @@
+# Render Blueprint — the Surety backend as an always-on Node web service.
+# Render → New → Blueprint → pick this repo. Values marked `sync: false` are secrets you paste into
+# the Render dashboard; they are never committed. Render sets PORT itself.
+services:
+  - type: web
+    name: surety-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    # tsx (the TypeScript runner used by `npm start`) is a devDependency.
+    buildCommand: npm ci --include=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NETWORK
+        value: sepolia
+      - key: CHAIN_ID
+        value: "11155111"
+      # https://<this service>.onrender.com — the World ID callback host (register it in the World portal)
+      - key: PUBLIC_URL
+        sync: false
+      # where the frontend runs, for CORS and redirects back after World ID (e.g. http://localhost:3000)
+      - key: FRONTEND_URL
+        sync: false
+      - key: SEPOLIA_RPC_URL
+        sync: false
+      - key: INDEXER_RPC_URL
+        value: https://sepolia.gateway.tenderly.co
+      - key: BACKEND_SIGNER_PK
+        sync: false
+      - key: AGENT_PK
+        sync: false
+      - key: WORLDID_ISSUER
+        value: https://sandbox.auth.world.org
+      - key: WORLDID_CLIENT_ID
+        sync: false
+      - key: WORLDID_CLIENT_SECRET
+        sync: false
+      - key: WORLDID_AUTH_METHOD
+        value: client_secret_basic
+      - key: IDKIT_APP_ID
+        sync: false
+      - key: IDKIT_RP_ID
+        sync: false
+      - key: IDKIT_SIGNING_KEY
+        sync: false
+      - key: IDKIT_ACTION
+        value: surety-buy-policy
+      - key: IDKIT_ENVIRONMENT
+        value: production
+      - key: GROQ_API_KEY
+        sync: false
